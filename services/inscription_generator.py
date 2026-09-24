@@ -283,6 +283,68 @@ LIBRARY: Dict[str, Dict[str, List[str]]] = {
             "此图写飞天反弹琵琶之姿，飘带曳空，花雨纷飞，令人想见敦煌盛唐气象。",
         ],
     },
+    "观月": {
+        "wuyan": [
+            "清宵悬皓月，庭树影婆娑。举盏遥相问，秋思入夜多。",
+            "月满平安殿，清辉照玉栏。举杯人对影，不语共秋寒。",
+        ],
+        "waka": [
+            "秋の夜の 月を眺めて 盃を 交はす人の 影やさしきかな",
+            "月清し 御簾の内より 袖を出で 君と見る夜の 露の玉かな",
+        ],
+        "haiku": [
+            "名月や 御殿の池に 影一つ",
+            "月見する 袖の匂ひや 秋の暮",
+        ],
+        "tiba": [
+            "此图写平安贵人对月之景，清辉满庭，诗酒相酬，物哀之情寓焉。",
+        ],
+    },
+    "赏樱": {
+        "wuyan": [
+            "春风吹御苑，樱花落满衣。举杯还复落，不觉日西微。",
+            "十二单袖里，藏得几枝樱。风来花似雪，人面共春明。",
+        ],
+        "waka": [
+            "花の下に 立ちて眺むる 春の宵 袖に散りくる 桜の玉かな",
+            "御所の庭 桜散りしく 十二単 袖に香りを 宿してぞ思ふ",
+        ],
+        "haiku": [
+            "花見する 十二単の 袖ひらり",
+            "春の宵 御所に散りしく 花吹雪",
+        ],
+        "tiba": [
+            "此图写平安宫廷赏樱之景，十二单层叠，花落满衣，繁华无常之感寓焉。",
+        ],
+    },   
+
+    "通用": {
+        "wuyan": [
+            "淡墨无声染，青山半隐痕。松风伴鹤去，留白见天宽。",
+            "纸上烟云起，笔端丘壑生。不知身在此，疑是入山行。",
+            "墨色分浓淡，山河入卷来。一舟横野渡，烟雨任徘徊。",
+        ],
+        "qiyan": [
+            "淡墨无声染素笺，青山半隐墨痕间。松风伴鹤归云外，留白处见天地宽。",
+            "笔落惊风雨满堂，墨分五色意悠长。江山不尽丹青里，一卷春秋入锦章。",
+            "烟云供养写溪山，笔底苍茫墨未干。莫道丹青无觅处，此身已在画图间。",
+        ],
+        "waka": [
+            "筆の先 墨の香りに 誘はれて 心のままに 山河を描く",
+            "白き紙 墨の一滴 落ちる時 無限の世界 ひらりと生まる",
+            "岩に松 烟に隠れし 山の端に 墨の一滴 秋の風吹く",
+        ],
+        "haiku": [
+            "筆を取る 墨の香りや 春の宵",
+            "白紙に 一滴の墨 山河かな",
+            "松風や 墨の香りに 秋深し",
+        ],
+        "tiba": [
+            "此图写东方山水之景，笔墨精妙，气韵生动，观之神游物外。",
+            "画家以心运笔，以墨写意，咫尺之间，尽显千里之势。",
+            "一卷丹青，写尽人间丘壑。几笔淡墨，藏得天地无穷。",
+        ],
+    },    
 }
 
 # 主题别名 → 标准 key
@@ -332,6 +394,45 @@ PROMPT_TEMPLATES = {
     "tiba": (
         "请以「{theme}」为题，写一段题跋（40-60 字的散文），"
         "用于题在一幅东方艺术画作上。要求：文言风格，点明画中意境。"
+        "直接输出题跋，不要标题，不要解释。"
+    ),
+}
+
+# 「通用」主题的专属模板（不写"以通用为题"）
+PROMPT_TEMPLATES_GENERIC = {
+    "wuyan": (
+        "请写一首五言绝句（4 句，每句 5 字，共 20 字），"
+        "不指定具体主题，写东方山水意境，"
+        "可用于题在一幅东方水墨/工笔画作上。"
+        "要求：意境深远，用词典雅，避免现代词汇。"
+        "直接输出诗句，不要标题，不要解释。"
+    ),
+    "qiyan": (
+        "请写一首七言绝句（4 句，每句 7 字，共 28 字），"
+        "不指定具体主题，写东方山水意境，"
+        "可用于题在一幅东方画作上。"
+        "要求：意境深远，用词典雅，避免现代词汇。"
+        "直接输出诗句，不要标题，不要解释。"
+    ),
+    "waka": (
+        "请写一首和歌（5-7-5-7-7 音，共 31 音），"
+        "不指定具体主题，写东方自然意境，"
+        "可用于题在一幅东方画作上。"
+        "风格古典、含蓄，用日文。"
+        "直接输出和歌，不要标题，不要解释。"
+    ),
+    "haiku": (
+        "请写一首俳句（5-7-5 音，共 17 音），"
+        "不指定具体主题，写东方自然意象，"
+        "可用于题在一幅东方画作上。"
+        "要求：含蓄、有意象、留白。"
+        "直接输出俳句，不要标题，不要解释。"
+    ),
+    "tiba": (
+        "请写一段题跋（40-60 字的散文），"
+        "不指定具体主题，写东方山水意境，"
+        "用于题在一幅东方画作上。"
+        "要求：文言风格，点明画中意境。"
         "直接输出题跋，不要标题，不要解释。"
     ),
 }
@@ -477,15 +578,22 @@ class InscriptionGenerator:
                 print(f"   ⚠️ 初始化 Agnes 失败: {e}")
                 return None
 
-        prompt = PROMPT_TEMPLATES.get(fmt, PROMPT_TEMPLATES["waka"]).format(theme=theme)
+        # 选模板：通用主题用专属模板
+        if theme == "通用":
+            template = PROMPT_TEMPLATES_GENERIC.get(fmt, PROMPT_TEMPLATES_GENERIC["waka"])
+            prompt = template
+        else:
+            template = PROMPT_TEMPLATES.get(fmt, PROMPT_TEMPLATES["waka"])
+            prompt = template.format(theme=theme)
 
         try:
             print(f"   🤖 Agnes 生成题词: {theme} / {FORMAT_NAMES_CN.get(fmt, fmt)}")
             text = self.agnes.chat_simple(prompt, system_prompt=SYSTEM_PROMPT)
             if text and len(text.strip()) > 4:
                 return text.strip()
+            print(f"   ⚠️ Agnes 返回空或过短: {repr(text)[:80]}")
         except Exception as e:
-            print(f"   ⚠️ Agnes 调用失败: {e}")
+            print(f"   ⚠️ Agnes 调用失败: {type(e).__name__}: {e}")
 
         return None
 
@@ -505,7 +613,13 @@ class InscriptionGenerator:
                 print(f"   ⚠️ 初始化 Pollinations 失败: {e}")
                 return None
 
-        prompt = PROMPT_TEMPLATES.get(fmt, PROMPT_TEMPLATES["waka"]).format(theme=theme)
+        # 选模板：通用主题用专属模板
+        if theme == "通用":
+            template = PROMPT_TEMPLATES_GENERIC.get(fmt, PROMPT_TEMPLATES_GENERIC["waka"])
+            prompt = template
+        else:
+            template = PROMPT_TEMPLATES.get(fmt, PROMPT_TEMPLATES["waka"])
+            prompt = template.format(theme=theme)
 
         try:
             print(f"   🌐 Pollinations 生成题词: {theme} / {FORMAT_NAMES_CN.get(fmt, fmt)}")

@@ -49,7 +49,10 @@
 | 引擎 | `api_engines/siliconflow.py` | ✅ | 硅基流动 |
 | 引擎 | 其余 10 个引擎 | ✅ | tongyi/yige/hunyuan/hf/freeapi/replicate/stability/free_multimodal_proxy/freellmapi/openrouter |
 | 处理器 | `handlers/yokai_handler.py` | ⏳ | 待填（第一个） |
-| 预设 | `presets/yokai/tengu.py` | ✅ | 天狗（第一个预设） |
+| 预设 | `presets/japanese/*` | ✅ | 5 个画风预设 |
+| 预设 | `presets/gufeng/*` | ✅ | 5 个国画预设 |
+| 预设 | `presets/genji/*` | ✅ | 5 个源氏预设 |
+| 脚本 | `compose_artwork.py` | ✅ | 全流程合成 |
 | 入口 | `test_pipeline.py` | ✅ | 最小链路验证脚本 |
 | 说明 | `README.md` | ⏳ | 完成 |
 | 配置 | `.env.sample` | ✅ | 环境变量样例 |
@@ -169,7 +172,24 @@
   1. 右下印浅背景对比不足
   2. 引首章偶与 AI 伪落款重叠
   3. 画风预设题词 fallback 脱节(待 M5 加通用题跋主题)
-- **下次继续**: genji 分类 5 个预设
+
+### 2026-09-24 第 13 次会话
+- ✅ genji 补全 5 个源氏物语预设
+  - byobu_emaki 屏风绘卷最佳(金箔+六扇屏)
+  - heian_court 平安宫廷氛围好(月下对饮)
+  - moon_viewing 观月构图最美
+  - junihitoe 十二单/ cherry_blossom 赏樱: 人物偏现代插画风
+- 🔧 重构题词主题机制:
+  - 新增「通用」主题(画风预设专用)
+  - theme_from_preset 根据分类+预设名自动推主题
+  - 修 PROMPT_TEMPLATES_GENERIC(「通用」不写进诗里)
+  - Agnes 异常加日志(定位空返回问题)
+- ⚠️ 累积问题:
+  1. 平安美人脸偏现代 → 待 M5(古画锚点/换模型)
+  2. 右下印浅背景对比不足
+  3. 引首章偶与 AI 伪落款重叠
+  4. Pollinations chat 403(Key 无 openai 权限，非阻塞)
+- **下次继续**: tang 分类 5 个预设
 
 
 

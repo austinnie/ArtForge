@@ -251,19 +251,50 @@ def pick_size(detail: Dict[str, str]) -> Tuple[int, int]:
 
 
 def theme_from_preset(preset: str, category: str) -> str:
-    """从预设名推主题，用于题词"""
-    PRESET_TO_THEME = {
-        "tengu": "天狗",
-        "kappa": "河童",
-        "kitsune": "九尾狐",
-        "yuki_onna": "雪女",
-        "oni": "鬼",
-        "hyakki_yagyo": "百鬼夜行",
-        "tang_beauty": "唐仕女",
-        "dunhuang": "飞天",
-    }
-    return PRESET_TO_THEME.get(preset, preset)
+    """
+    根据分类 + 预设名推题词主题。
 
+    规则:
+      1. 先查显式映射表
+      2. 查不到 → 画风类（japanese/gufeng）用「通用」
+      3. 再查不到 → 用预设名兜底
+    """
+    PRESET_TO_THEME = {
+        # ---------- yokai ----------
+        "tengu":        "天狗",
+        "kappa":        "河童",
+        "kitsune":      "九尾狐",
+        "yuki_onna":    "雪女",
+        "oni":          "鬼",
+        "hyakki_yagyo": "百鬼夜行",
+        "noppera_bo":   "天狗",
+        "roku_ro_kubi": "天狗",
+
+        # ---------- genji ----------
+        "heian_court":    "观月",
+        "junihitoe":      "唐仕女",
+        "byobu_emaki":    "观月",
+        "moon_viewing":   "观月",
+        "cherry_blossom": "赏樱",
+
+        # ---------- tang ----------
+        "dunhuang":    "飞天",
+        "tang_beauty": "唐仕女",
+        "tang_palace": "唐仕女",
+        "tang_horse":  "通用",
+        "feitian":     "飞天",
+    }
+
+    # 1. 显式映射
+    if preset in PRESET_TO_THEME:
+        return PRESET_TO_THEME[preset]
+
+    # 2. 画风类 → 通用
+    if category in ("japanese", "gufeng"):
+        return "通用"
+
+    # 3. 兜底
+    return preset
 
 # ============================================================
 # 主流程
@@ -310,6 +341,10 @@ def main():
     )
     negative = builder.get_negative()
 
+    # 推题词主题
+    theme = theme_from_preset(args.preset, args.category)
+    print(f"   🎯 题词主题: {theme}")
+    
     # 剔除 inscription 层（方案 A）
     if args.clean_prompt and "inscription" in detail:
         removed = detail.pop("inscription")
@@ -367,7 +402,7 @@ def main():
     if not args.no_inscription:
         from services.inscription_generator import InscriptionGenerator
 
-        theme = theme_from_preset(args.preset, args.category)
+        
         ig = InscriptionGenerator(seed=args.seed)
         inscription_text, meta = ig.generate(
             theme=theme, format=args.format, return_meta=True,
@@ -389,7 +424,7 @@ def main():
             max_chars_per_col=8,
             # bg_alpha=180, #白色衬底，去掉
         )
-        print(f"   ✅ 已渲染到画面右上角 (font={font_size}, 带底衬)")
+        print(f"   ✅ 已渲染到画面右上角 (font={font_size}")
     else:
         print("\n🖋️  题词: 跳过")
 
@@ -397,8 +432,7 @@ def main():
     if not args.no_seal:
         from services.seal_generator import SealGenerator
 
-        sg = SealGenerator()
-        theme = theme_from_preset(args.preset, args.category)
+        sg = SealGenerator()        
         margin = int(min(width, height) * 0.05)
 
         # 右下：主题印（放大到 0.14）
