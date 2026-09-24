@@ -35,25 +35,32 @@
 | 层 | `layers/layer_lighting.py` | ✅ | 25 个光影 |
 | 层 | `layers/layer_inscription.py` | ✅ | 17 个题词印章 |
 | 层 | `layers/layer_quality.py` | ✅ | 15 个画质 |
-| 核心 | `core/prompt_builder.py` | ⏳ | 待填 |
+| 核心 | `core/prompt_builder.py` | ✅ | 已完成 |
 | 核心 | `core/safety.py` | ⏳ | 待填（艺术豁免规则） |
 | 核心 | `core/intent_analyzer.py` | ⏳ | 待填 |
 | 服务 | `services/inscription_generator.py` | ⏳ | 待填（汉诗/和歌生成） |
 | 服务 | `services/seal_generator.py` | ⏳ | 待填（印章渲染） |
 | 服务 | `services/aging_processor.py` | ⏳ | 待填（做旧） |
 | 服务 | `services/scroll_composer.py` | ⏳ | 待填（画幅合成） |
-| 引擎 | `api_engines/__init__.py` | ⏳ | 待填（从 PromptForge 抄） |
+| 引擎 | `api_engines/__init__.py` | ✅ | 13 个引擎 + create_engine 工厂 |
+| 引擎 | `api_engines/base.py` | ✅ | 基类 |
+| 引擎 | `api_engines/agnes.py` | ✅ | Agnes（图像/文本/视频/视觉） |
+| 引擎 | `api_engines/pollinations.py` | ✅ | Pollinations（免费，无需 Key） |
+| 引擎 | `api_engines/siliconflow.py` | ✅ | 硅基流动 |
+| 引擎 | 其余 10 个引擎 | ✅ | tongyi/yige/hunyuan/hf/freeapi/replicate/stability/free_multimodal_proxy/freellmapi/openrouter |
 | 处理器 | `handlers/yokai_handler.py` | ⏳ | 待填（第一个） |
 | 预设 | `presets/yokai/tengu.py` | ✅ | 天狗（第一个预设） |
-| 入口 | `main.py` | ⏳ | 待填 |
-| 说明 | `README.md` | ⏳ | 待填 |
+| 入口 | `test_pipeline.py` | ✅ | 最小链路验证脚本 |
+| 说明 | `README.md` | ⏳ | 完成 |
+| 配置 | `.env.sample` | ✅ | 环境变量样例 |
+| 配置 | `requirements.txt` | ✅ | 依赖清单 |
 
 ---
 
 ## 🚧 当前进度
 
-**正在做**：`config/art_config.py` 刚完成
-**下一步**：写 `config/settings.py` 和 `layers/__init__.py`
+**正在做**：M3 后处理服务
+**下一步**：写 `services/seal_generator.py`（第一个后处理服务）
 
 ---
 
@@ -166,6 +173,14 @@
 - ✅ `compose_preset("tengu")` 验证通过
 - **下次继续**：写更多妖怪预设 或 `core/safety.py`
 
+### 2026-09-24 第 5 次会话
+- ✅ 用户补充 `api_engines/` 全 13 个引擎 + `create_engine()` 工厂
+- ✅ 新增 `test_pipeline.py`（预设 → prompt → 出图 → 保存）
+- ✅ 新增 `.env.sample`、`requirements.txt`
+- ✅ **M2 达成**：`python test_pipeline.py` 成功出天狗图
+  - 水墨风、云海远山、题词印章齐全
+  - 注意：题词/印章是 AI 画进图里的，非 PIL 合成（M3 要替换）
+- **下次继续**：写 `services/seal_generator.py`
 ---
 
 ## 🔗 关键文件速查
