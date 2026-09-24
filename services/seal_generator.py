@@ -40,7 +40,7 @@ if str(PROJECT_ROOT) not in sys.path:      # ← 新增
 FONT_DIR = PROJECT_ROOT / "assets" / "fonts"
 
 FONT_CANDIDATES = [
-    FONT_DIR / "seal.ttf",          # 项目自带篆书（推荐）
+    FONT_DIR / "Mini_zhuan.ttf",          # 项目自带篆书（推荐）
     FONT_DIR / "kai.ttf",
     FONT_DIR / "hanyi_shangwei.ttf",
     Path("C:/Windows/Fonts/simkai.ttf"),
@@ -80,12 +80,21 @@ class SealGenerator:
         print("   ⚠️ 未找到中文字体，将用 Pillow 默认字体")
         return None
 
-    def _load_font(self, size: int) -> ImageFont.FreeTypeFont:
-        if self.font_path:
+    def _load_font(self, size: int) -> ImageFont.FreeTypeFont:        
+        # ✅ 专属小篆字体优先（用于 ARTIST_NAME 落款印章）
+        zhuan_font = PROJECT_ROOT / "assets" / "fonts" / "Mini_zhuan.ttf"
+        if zhuan_font.exists():
+            try:
+                return ImageFont.truetype(str(zhuan_font), size)
+            except Exception:
+                pass
+
+        # ↓↓↓ 以下是它原本就有的代码，不要删 ↓↓↓
+        if self.font_path and Path(self.font_path).exists():
             try:
                 return ImageFont.truetype(str(self.font_path), size)
-            except Exception as e:
-                print(f"   ⚠️ 加载字体失败: {e}")
+            except Exception:
+                pass
         return ImageFont.load_default()
 
     # ---------- 排版：把文字拆成行列 ----------
@@ -367,7 +376,9 @@ if __name__ == "__main__":
     print("  SealGenerator 自检")
     print("=" * 70)
 
-    sg = SealGenerator()
+    # 显式传入小篆字体，让自检打印更准确
+    zhuan_font = PROJECT_ROOT / "assets" / "fonts" / "Mini_zhuan.ttf"
+    sg = SealGenerator(font_path=zhuan_font if zhuan_font.exists() else None)
     print(f"\n🔍 字体: {sg.font_path or '默认字体'}")
 
     out_dir = PROJECT_ROOT / "output" / "tmp" / "seals"

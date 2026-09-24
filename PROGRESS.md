@@ -57,14 +57,15 @@
 | 说明 | `README.md` | ⏳ | 完成 |
 | 配置 | `.env.sample` | ✅ | 环境变量样例 |
 | 配置 | `requirements.txt` | ✅ | 依赖清单 |
+| 全局 | `ARTIST_NAME` | ✅ | 统一配置为 "東方藝術"，贯穿题词、印章、水印 |
 
 ---
 
 ## 🚧 当前进度
 
-**正在做**：M3 后处理服务
-**已完成**：印章生成器、做旧处理器
-**下一步**：写 `services/inscription_generator.py`（题词生成，需 LLM + 降级方案）
+**正在做**：M5 收尾 — 社交媒体输出格式
+**已完成**：画幅合成、安全过滤、CLI 入口、题词双语、小篆印章、防伪水印、art_nude 预设
+**下一步**：实现 `skills/wechat_formatter/`（微信/知乎图文输出模块）
 
 ---
 
@@ -227,11 +228,31 @@
   2. 唐风/平安美人脸偏现代（需换模型或 LoRA）
   3. 具体作品锚点识别不稳
 
-
+### 2026-09-24 第 16 次会话
+- ✅ `services/scroll_composer.py` — 画幅合成器（立轴/横卷/屏风/团扇/册页）
+- ✅ `core/safety.py` — 安全过滤 + 艺术豁免
+- ✅ `main.py` — 正式 CLI 入口，集成 `--language` 中日双语自动切换
+- ✅ `services/inscription_generator.py` — 题词生成器支持中日双语，唐风/古风强制中文
+- ✅ `services/seal_generator.py` — 接入专属小篆字体 `Mini_zhuan.ttf`
+- ✅ `services/watermark.py` — 新增防伪水印层
+- ✅ `presets/art_nude/` — 新增 5 个艺术裸体预设（含蓄暗示风格）
+- ✅ 印章文字统一为 `ARTIST_NAME` ("東方藝術")
+- ⚠️ 累积问题：
+  1. 微信/知乎输出格式（M5 下一阶段）
+  2. 唐风/平安美人脸偏现代（需换模型或 LoRA）
+  3. 具体作品锚点识别不稳
 
 ---
 
 ## 📋 下一步（按优先级）
+
+### 阶段 H：社交媒体输出 (M5 收尾)
+1. [ ] `skills/wechat_formatter/` — 微信/知乎图文输出模块
+   - 生成适合手机阅读的 Markdown 排版
+   - 自动拼接：作品图 + 创作理念 + 题词释义 + 印章说明
+   - 输出长图或标准图文格式
+2. [ ] 批量生成脚本 — 一键生成整套系列图 + 配套文案
+
 
 ### 阶段 A：配置与骨架
 1. [ ] `config/settings.py` — 全局配置（复用 PromptForge 的 Settings 结构）
