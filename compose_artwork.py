@@ -325,6 +325,10 @@ def main():
                     action="store_false",
                     help="保留 inscription 层（让 AI 自己画题词印章）")
 
+    ap.add_argument("--language", default="auto",
+                    choices=["auto", "chinese", "japanese"],
+                    help="题词语言（auto=按分类自动，chinese=中文，japanese=日文）")
+                    
     args = ap.parse_args()
 
     print("=" * 70)
@@ -407,8 +411,12 @@ def main():
         inscription_text, meta = ig.generate(
             theme=theme, format=args.format, return_meta=True,
             backend=args.engine if args.engine in ("agnes", "pollinations") else "auto",
+            category=args.category,      # ✅ 新增
+            language=args.language,      # ✅ 新增
         )
-        print(f"\n🖋️  题词 ({meta['format_cn']}, source={meta['source']}):")
+        lang_cn = "中文" if meta.get("language") == "chinese" else "日文"
+        print(f"\n🖋️  题词 ({lang_cn}, {meta['format_cn']}, source={meta['source']}):")
+    
         for line in inscription_text.split("\n"):
             print(f"   {line}")
 

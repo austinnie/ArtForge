@@ -10,6 +10,7 @@ ArtForge 正式入口
   python main.py --preset tengu                     # 快速模式
   python main.py --preset dunhuang --engine agnes --scroll
   python main.py --preset tengu --no-aging --no-inscription
+  python main.py --preset feitian --category tang --language chinese  # 强制中文
 """
 from __future__ import annotations
 import argparse
@@ -46,7 +47,7 @@ from compose_artwork import (
 # 主题/预设/引擎 元数据
 # ============================================================
 CATEGORIES = {
-    "japanese": "🎎 日本文化（浮世绘/日本画/水墨/屏风/绘卷）",
+    "japanese": " 日本文化（浮世绘/日本画/水墨/屏风/绘卷）",
     "yokai":    "👹 妖怪（天狗/河童/九尾狐/雪女/鬼）",
     "gufeng":   "🖌️ 古风绘画（水墨/工笔/青绿/减笔/白描）",
     "genji":    "📜 源氏物语（平安宫廷/十二单/屏风绘卷/观月/赏樱）",
@@ -68,7 +69,7 @@ ENGINES = {
 def interactive_mode():
     """交互式模式"""
     print("\n" + "=" * 70)
-    print("  🎎 ArtForge · 东方艺术生成工坊")
+    print("   ArtForge · 东方艺术生成工坊")
     print("=" * 70)
 
     builder = PromptBuilder()
@@ -91,7 +92,7 @@ def interactive_mode():
         print(f"⚠️ {category} 暂无预设，回退到随机组合")
         preset = None
     else:
-        print(f"\n🎨 {category} 可用预设：")
+        print(f"\n {category} 可用预设：")
         for i, p in enumerate(presets, 1):
             print(f"  {i}. {p}")
         print(f"  0. 随机组合")
@@ -126,7 +127,7 @@ def interactive_mode():
     choice = input("\n请输入编号 [1]: ").strip() or "1"
     composition = comp_map.get(choice, "vertical")
 
-    # 5. 装裱
+    # 5. 装
     scroll = input("\n🎎 是否加传统装裱（绫边/轴头）？[Y/n]: ").strip().lower()
     use_scroll = scroll != "n"
 
@@ -142,6 +143,7 @@ def interactive_mode():
         composition=composition,
         use_scroll=use_scroll,
         seed=seed,
+        language="auto",  # ✅ 新增：交互式默认自动检测
     )
 
 
@@ -158,10 +160,11 @@ def run_pipeline(
     no_aging: bool = False,
     no_inscription: bool = False,
     no_seal: bool = False,
+    language: str = "auto",  # ✅ 新增：题词语言参数
 ):
     """执行完整流水线"""
     print("\n" + "=" * 70)
-    print("  🎨 开始创作")
+    print("   开始创作")
     print("=" * 70)
 
     builder = PromptBuilder()
@@ -213,7 +216,7 @@ def run_pipeline(
     # 2. 尺寸
     width, height = pick_size(detail)
     print(f"\n🖼️  画幅: {width}x{height} ({composition})")
-    print(f"🎯 主题: {theme}")
+    print(f" 主题: {theme}")
 
     # 3. 出图
     config = load_config()
@@ -239,13 +242,23 @@ def run_pipeline(
     if not no_inscription:
         from services.inscription_generator import InscriptionGenerator
         ig = InscriptionGenerator(seed=seed)
+        
+        # ✅ 传递 language 参数（auto 时传 None，让 generator 自动检测）
+        lang = language if language != "auto" else None
+        
         inscription_text, meta = ig.generate(
             theme=theme, format="auto", return_meta=True,
             backend=engine_name if engine_name in ("agnes", "pollinations") else "auto",
+            category=category,  # ✅ 新增：传递分类，用于自动检测语言
+            language=lang,      # ✅ 新增：传递强制语言
         )
-        print(f"\n🖋️  题词 ({meta['format_cn']}):")
+        
+        # ✅ 打印时显示语言
+        lang_cn = "中文" if meta.get("language") == "chinese" else "日文"
+        print(f"\n🖋️  题词 ({lang_cn}, {meta['format_cn']}):")
         for line in inscription_text.split("\n")[:3]:
             print(f"   {line}")
+            
         renderer = InscriptionRenderer()
         font_size = max(24, int(min(width, height) * 0.045))
         image = renderer.render(
@@ -290,7 +303,8 @@ def run_pipeline(
     with open(meta_path, "w", encoding="utf-8") as f:
         f.write(f"preset: {name}\ncategory: {category}\nengine: {engine_name}\n")
         f.write(f"seed: {seed}\nsize: {final.size[0]}x{final.size[1]}\n")
-        f.write(f"composition: {composition}\nscroll: {use_scroll}\n\n")
+        f.write(f"composition: {composition}\nscroll: {use_scroll}\n")
+        f.write(f"language: {language}\n\n")  # ✅ 新增：记录语言
         f.write(f"prompt:\n{prompt}\n\nnegative:\n{negative}\n")
         if inscription_text:
             f.write(f"\ninscription:\n{inscription_text}\n")
@@ -315,6 +329,9 @@ def main():
     ap.add_argument("--no-aging", action="store_true")
     ap.add_argument("--no-inscription", action="store_true")
     ap.add_argument("--no-seal", action="store_true")
+    ap.add_argument("--language", default="auto",
+                    choices=["auto", "chinese", "japanese"],
+                    help="题词语言（auto=按分类自动，chinese=中文，japanese=日文）")  # ✅ 新增
     args = ap.parse_args()
 
     # 有任何参数 → 快速模式；否则 → 交互式
@@ -333,6 +350,7 @@ def main():
             no_aging=args.no_aging,
             no_inscription=args.no_inscription,
             no_seal=args.no_seal,
+            language=args.language,  # ✅ 新增：传递语言参数
         )
     else:
         interactive_mode()

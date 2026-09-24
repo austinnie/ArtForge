@@ -480,6 +480,8 @@ class InscriptionGenerator:
         format: str = "auto",
         backend: str = "auto",
         return_meta: bool = False,
+        category: str = "",          # ✅ 新增：主题分类
+        language: str = "auto",      # ✅ 新增：强制语言（auto/chinese/japanese）
     ) -> Union[str, Tuple[str, Dict]]:
         """
         生成题词。
@@ -493,6 +495,22 @@ class InscriptionGenerator:
         Returns:
             text 或 (text, meta)
         """
+        # ✅ 自动检测语言（根据分类）
+        if language == "auto":
+            if category in ("gufeng", "tang"):
+                language = "chinese"
+            elif category in ("japanese", "yokai", "genji"):
+                language = "japanese"
+            else:
+                language = "japanese"  # 兜底
+
+        # ✅ 如果 format 是 auto，根据语言选默认体裁
+        if format == "auto":
+            if language == "chinese":
+                format = self._rng.choice(["wuyan", "qiyan", "tiba"])
+            else:
+                format = self._rng.choice(["waka", "haiku", "tiba"])
+
         # 1. 规范化
         theme_std = self._normalize_theme(theme)
         fmt = self._normalize_format(format)
@@ -508,6 +526,7 @@ class InscriptionGenerator:
             "format": fmt,
             "format_cn": FORMAT_NAMES_CN.get(fmt, fmt),
             "source": chosen,
+            "language": language,       # ✅ 新增
             "length": len(text),
             "expected_length": FORMAT_LENGTH.get(fmt, 0),
         }

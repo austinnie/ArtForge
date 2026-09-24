@@ -217,7 +217,7 @@ class ScrollComposer:
         rod_y = total_h - bottom_rod_h // 2
         for x in (cap_r, total_w - cap_r):
             draw.ellipse(
-                [x - cap_r, y - cap_r, x + cap_r, y + cap_r],
+                [x - cap_r, rod_y - cap_r, x + cap_r, rod_y + cap_r],
                 fill=MountColors.ZHOU_JADE,
                 outline=MountColors.ZHOU_WOOD, width=2,
             )
