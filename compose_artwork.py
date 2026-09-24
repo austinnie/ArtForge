@@ -430,20 +430,52 @@ def main():
         print("\n🖋️  题词: 跳过")
 
     # ---------- 5. 印章 ----------
+# 在 compose_artwork.py 的印章部分（约第 280 行附近），修改为：
+
+    # ---------- 5. 印章 ----------
     if not args.no_seal:
         from services.seal_generator import SealGenerator
-
-        sg = SealGenerator()        
+        sg = SealGenerator()
         margin = int(min(width, height) * 0.05)
-
-        # 右下：主题印（放大到 0.14）
+        
+        # ✅ 修复：印章下加半透明白底衬，解决浅色背景对比不足
+        def _add_seal_backdrop(img, position, size, margin):
+            """在印章位置加半透明底衬（自然米黄，无红框，边缘羽化）"""
+            w, h = img.size
+            overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
+            draw = ImageDraw.Draw(overlay)
+            pad = int(size * 0.12)  # 从 0.15 降到 0.12
+            if "bottom_right" in position:
+                x0 = w - margin - size - pad
+                y0 = h - margin - size - pad
+                x1 = w - margin + pad
+                y1 = h - margin + pad
+            elif "top_left" in position:
+                x0 = margin - pad
+                y0 = margin - pad
+                x1 = margin + size + pad
+                y1 = margin + size + pad
+            else:
+                return img
+            # ✅ 改成自然米黄色（和宣纸接近），透明度从 140 降到 90
+            draw.rectangle([x0, y0, x1, y1], fill=(245, 240, 225, 90))
+            # ✅ 边缘羽化（高斯模糊）
+            from PIL import ImageFilter
+            overlay = overlay.filter(ImageFilter.GaussianBlur(radius=3))
+            return Image.alpha_composite(img, overlay)
+        
+        # 右下：主题印
+        seal_size = int(min(width, height) * 0.14)
+        image = _add_seal_backdrop(image, "bottom_right", seal_size, margin)
         image = sg.apply(
             image, theme,
             style="zhu_wen", shape="square",
             position="bottom_right",
             scale=0.14, margin=margin,
         )
-        # 左上：引首章（中文，避免英文偏小）
+        # 左上：引首章
+        seal_size2 = int(min(width, height) * 0.11)
+        image = _add_seal_backdrop(image, "top_left", seal_size2, margin)
         image = sg.apply(
             image, "東方藝術",
             style="zhu_wen", shape="rect",

@@ -11,7 +11,7 @@ PRESET = {
             "rebound pipa pose, "
             "flower rain, "
             "elegant dance in mid-air",
-            "flying apsara with lotus flower, "
+            "flying apsara holding lotus flower, long trailing ribbons, "
             "long trailing ribbons, "
             "flowing dress, "
             "celestial music, "
