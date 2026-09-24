@@ -1,0 +1,15 @@
+{
+  "name": "inscription_writer",
+  "version": "1.0.0",
+  "description": "将题词文本竖排渲染到现有画作上，支持自定义位置、字号和排版",
+  "inputs": {
+    "image": "输入图片路径",
+    "text": "题词文本",
+    "output": "输出图片路径",
+    "font_size": "字号",
+    "position": "位置 (top_right/top_left/bottom_right/bottom_left)"
+  },
+  "outputs": {
+    "output_path": "渲染后的图片路径"
+  }
+}
