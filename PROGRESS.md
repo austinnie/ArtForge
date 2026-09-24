@@ -39,8 +39,8 @@
 | 核心 | `core/safety.py` | ⏳ | 待填（艺术豁免规则） |
 | 核心 | `core/intent_analyzer.py` | ⏳ | 待填 |
 | 服务 | `services/inscription_generator.py` | ⏳ | 待填（汉诗/和歌生成） |
-| 服务 | `services/seal_generator.py` | ⏳ | 待填（印章渲染） |
-| 服务 | `services/aging_processor.py` | ⏳ | 待填（做旧） |
+| 服务 | `services/seal_generator.py` | ✅ | 朱文/白文，透明PNG，可贴图 |
+| 服务 | `services/aging_processor.py` | ✅ | 宣纸/绢本/老纸/褐纸 + 5 种老化 |
 | 服务 | `services/scroll_composer.py` | ⏳ | 待填（画幅合成） |
 | 引擎 | `api_engines/__init__.py` | ✅ | 13 个引擎 + create_engine 工厂 |
 | 引擎 | `api_engines/base.py` | ✅ | 基类 |
@@ -60,7 +60,62 @@
 ## 🚧 当前进度
 
 **正在做**：M3 后处理服务
-**下一步**：写 `services/seal_generator.py`（第一个后处理服务）
+**已完成**：印章生成器、做旧处理器
+**下一步**：写 `services/inscription_generator.py`（题词生成，需 LLM + 降级方案）
+
+---
+
+
+
+## 📝 会话日志
+
+### 2026-09-24 第 1 次会话
+
+- ✅ 创建了 `scripts/create_project.py`
+- ✅ 创建了 `PROGRESS.md`
+- ✅ 创建了 `config/art_config.py`
+- ⏭️ 敏感内容（art_nude）只留骨架
+- **下次继续**：写 `config/settings.py` 和 `layers/__init__.py`
+
+### 2026-09-24 第 2 次会话
+
+- ✅ 完成 `config/settings.py` 和 `layers/__init__.py`
+
+### 2026-09-24 第 3 次会话
+- ✅ 6 层系统全部完成
+  - subject 36 / scene 30 / style 29 / lighting 24
+  - composition 8 / inscription 19 / quality 16
+  - 合计 162 条短语
+
+### 2026-09-24 第 4 次会话（续）
+- ✅ 修复 PromptBuilder token 截断（从整层裁 → 逐短语裁）
+- ✅ 修正 `layer_style.py`（去掉 yokai，style 从 29→19）
+- ✅ `presets/yokai/tengu.py` — 第一个预设
+- ✅ `compose_preset("tengu")` 验证通过
+- **下次继续**：写更多妖怪预设 或 `core/safety.py`
+
+### 2026-09-24 第 5 次会话
+- ✅ 用户补充 `api_engines/` 全 13 个引擎 + `create_engine()` 工厂
+- ✅ 新增 `test_pipeline.py`（预设 → prompt → 出图 → 保存）
+- ✅ 新增 `.env.sample`、`requirements.txt`
+- ✅ **M2 达成**：`python test_pipeline.py` 成功出天狗图
+  - 水墨风、云海远山、题词印章齐全
+  - 注意：题词/印章是 AI 画进图里的，非 PIL 合成（M3 要替换）
+
+
+### 2026-09-24 第 6 次会话
+
+- ✅ `services/seal_generator.py` — 印章生成器
+  - 朱文（红字透底）/ 白文（红底白字），方形 + 引首章
+  - 关键修复：`_plan_glyphs()` 预计算绝对坐标，消除逐字累积误差
+  - 字号自适应：`_pick_font_size()` 分 square/rect 两套逻辑
+  - 自检通过：鞍马山/天狗/源氏物语/百鬼夜行/天/ArtForge 均居中
+- ✅ `services/aging_processor.py` — 做旧处理器
+  - 四种纹理：宣纸 / 绢本 / 老纸 / 褐纸（程序生成，不依赖素材）
+  - 五种效果：泛黄 / 霉斑 / 边缘磨损 / 暗角 / 噪点
+  - 支持 seed 复现，已修 Pillow 13 DeprecationWarning
+  - 自检通过：11 张对比图全部生成
+- **下次继续**：写 `services/inscription_generator.py`
 
 ---
 
@@ -144,43 +199,7 @@
 - 处理方式：`core/safety.py` 里加艺术豁免规则
 - **敏感部分先跳过，留骨架和占位**
 
----
 
-## 📝 会话日志
-
-### 2026-09-24 第 1 次会话
-
-- ✅ 创建了 `scripts/create_project.py`
-- ✅ 创建了 `PROGRESS.md`
-- ✅ 创建了 `config/art_config.py`
-- ⏭️ 敏感内容（art_nude）只留骨架
-- **下次继续**：写 `config/settings.py` 和 `layers/__init__.py`
-
-### 2026-09-24 第 2 次会话
-
-- ✅ 完成 `config/settings.py` 和 `layers/__init__.py`
-
-### 2026-09-24 第 3 次会话
-- ✅ 6 层系统全部完成
-  - subject 36 / scene 30 / style 29 / lighting 24
-  - composition 8 / inscription 19 / quality 16
-  - 合计 162 条短语
-
-### 2026-09-24 第 4 次会话（续）
-- ✅ 修复 PromptBuilder token 截断（从整层裁 → 逐短语裁）
-- ✅ 修正 `layer_style.py`（去掉 yokai，style 从 29→19）
-- ✅ `presets/yokai/tengu.py` — 第一个预设
-- ✅ `compose_preset("tengu")` 验证通过
-- **下次继续**：写更多妖怪预设 或 `core/safety.py`
-
-### 2026-09-24 第 5 次会话
-- ✅ 用户补充 `api_engines/` 全 13 个引擎 + `create_engine()` 工厂
-- ✅ 新增 `test_pipeline.py`（预设 → prompt → 出图 → 保存）
-- ✅ 新增 `.env.sample`、`requirements.txt`
-- ✅ **M2 达成**：`python test_pipeline.py` 成功出天狗图
-  - 水墨风、云海远山、题词印章齐全
-  - 注意：题词/印章是 AI 画进图里的，非 PIL 合成（M3 要替换）
-- **下次继续**：写 `services/seal_generator.py`
 ---
 
 ## 🔗 关键文件速查
