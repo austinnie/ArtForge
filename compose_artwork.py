@@ -406,6 +406,7 @@ def main():
         ig = InscriptionGenerator(seed=args.seed)
         inscription_text, meta = ig.generate(
             theme=theme, format=args.format, return_meta=True,
+            backend=args.engine if args.engine in ("agnes", "pollinations") else "auto",
         )
         print(f"\n🖋️  题词 ({meta['format_cn']}, source={meta['source']}):")
         for line in inscription_text.split("\n"):
