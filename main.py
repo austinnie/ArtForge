@@ -42,6 +42,10 @@ from compose_artwork import (
     InscriptionRenderer, pick_size, theme_from_preset, load_config,
 )
 
+# ============================================================
+# 个人配置（请修改为你的名字）
+# ============================================================
+ARTIST_NAME = "東方藝術"  # ✅ 改成你的名字，如 "李太白"、"Zhang San"
 
 # ============================================================
 # 主题/预设/引擎 元数据
@@ -276,11 +280,12 @@ def run_pipeline(
         from services.seal_generator import SealGenerator
         sg = SealGenerator()
         margin = int(min(width, height) * 0.05)
-        image = sg.apply(image, theme, style="zhu_wen", shape="square",
+        image = sg.apply(image, ARTIST_NAME, style="zhu_wen", shape="square",
                          position="bottom_right", scale=0.14, margin=margin)
-        image = sg.apply(image, "東方藝術", style="zhu_wen", shape="rect",
+        image = sg.apply(image, ARTIST_NAME, style="zhu_wen", shape="rect",
                          position="top_left", scale=0.11, margin=margin)
-        print(f"\n🔖 印章: 右下「{theme}」+ 左上「東方藝術」")
+        print(f"\n🔖 印章: 右下「{ARTIST_NAME}」+ 左上「{ARTIST_NAME}」")
+
 
     # 7. 装裱
     if use_scroll:
@@ -289,6 +294,23 @@ def run_pipeline(
         image = sc.compose(image.convert("RGB"), composition=composition)
         image = image.convert("RGBA")
         print(f"\n🎎 装裱: {composition}")
+
+    # 7.5 防伪水印（极低透明度，不易察觉）
+    from services.watermark import WatermarkProcessor
+    wp = WatermarkProcessor(seed=seed)
+    # 使用艺人名字 + 项目名作为水印内容
+    watermark_text = f"{ARTIST_NAME} · ArtForge"
+    image = wp.add_subtle_watermark(
+        image, 
+        text=watermark_text, 
+        opacity=10,          # ✅ 极低透明度（正常几乎不可见）
+        font_size=36,        # 字号
+        angle=-25,           # 倾斜角度
+        spacing_x=180,       # 水平间距
+        spacing_y=180,       # 垂直间距
+    )
+    print(f"\n🛡️  防伪水印: 已嵌入「{watermark_text}」(opacity=10)")
+
 
     # 8. 保存
     out_dir = PROJECT_ROOT / "output" / category

@@ -33,6 +33,10 @@ from typing import Dict, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
+# ============================================================
+# 个人配置（请修改为你的名字）
+# ============================================================
+ARTIST_NAME = "東方藝術"  # ✅ 改成你的名字，如 "李太白"、"Zhang San"
 
 # ============================================================
 # 路径修正 + .env
@@ -476,7 +480,7 @@ def main():
         seal_size = int(min(width, height) * 0.14)
         image = _add_seal_backdrop(image, "bottom_right", seal_size, margin)
         image = sg.apply(
-            image, theme,
+            image, ARTIST_NAME,
             style="zhu_wen", shape="square",
             position="bottom_right",
             scale=0.14, margin=margin,
@@ -485,12 +489,12 @@ def main():
         seal_size2 = int(min(width, height) * 0.11)
         image = _add_seal_backdrop(image, "top_left", seal_size2, margin)
         image = sg.apply(
-            image, "東方藝術",
+            image, ARTIST_NAME,
             style="zhu_wen", shape="rect",
             position="top_left",
             scale=0.11, margin=margin,
         )
-        print(f"\n🔖 印章: 右下「{theme}」(0.14) + 左上「東方藝術」(0.11)")
+        print(f"\n🔖 印章: 右下「{ARTIST_NAME}」(0.14) + 左上「{ARTIST_NAME}」(0.11)")
     else:
         print("\n🔖 印章: 跳过")
 
