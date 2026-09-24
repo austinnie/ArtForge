@@ -28,15 +28,13 @@
 | 目录 | `scripts/create_project.py` | ✅ | 34 个子目录已定义 |
 | 进度 | `PROGRESS.md` | ✅ | 本文档 |
 | 配置 | `config/art_config.py` | ✅ | 画风/妖怪/唐风/画幅 已定义 |
-| 配置 | `config/settings.py` | ⏳ | 待填 |
-| 层 | `layers/__init__.py` | ⏳ | 待填 |
-| 层 | `layers/layer_subject.py` | ⏳ | 待填 |
-| 层 | `layers/layer_scene.py` | ⏳ | 待填 |
-| 层 | `layers/layer_style.py` | ⏳ | 待填 |
-| 层 | `layers/layer_lighting.py` | ⏳ | 待填 |
-| 层 | `layers/layer_composition.py` | ⏳ | 待填（画幅） |
-| 层 | `layers/layer_inscription.py` | ⏳ | 待填（题词印章） |
-| 层 | `layers/layer_quality.py` | ⏳ | 待填 |
+| 配置 | `config/settings.py` | ✅ |完成 |
+| 层 | `layers/__init__.py` | ✅ | 完成 |
+| 层 | `layers/layer_scene.py` | ✅ | 25 个场景 |
+| 层 | `layers/layer_style.py` | ✅ | 从 art_config 同步 ~29 画风 |
+| 层 | `layers/layer_lighting.py` | ✅ | 25 个光影 |
+| 层 | `layers/layer_inscription.py` | ✅ | 17 个题词印章 |
+| 层 | `layers/layer_quality.py` | ✅ | 15 个画质 |
 | 核心 | `core/prompt_builder.py` | ⏳ | 待填 |
 | 核心 | `core/safety.py` | ⏳ | 待填（艺术豁免规则） |
 | 核心 | `core/intent_analyzer.py` | ⏳ | 待填 |
@@ -151,7 +149,16 @@
 - ⏭️ 敏感内容（art_nude）只留骨架
 - **下次继续**：写 `config/settings.py` 和 `layers/__init__.py`
 
-### （新会话在此追加）
+### 2026-09-24 第 2 次会话
+
+- ✅ 完成 `config/settings.py` 和 `layers/__init__.py`
+
+### 2026-09-24 第 3 次会话
+- ✅ 6 层系统全部完成
+  - subject 36 / scene 30 / style 29 / lighting 24
+  - composition 8 / inscription 19 / quality 16
+  - 合计 162 条短语
+- **下次继续**：写 `core/prompt_builder.py`
 
 ---
 
