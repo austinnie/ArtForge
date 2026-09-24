@@ -182,22 +182,22 @@ class InscriptionRenderer:
         else:
             y_start = ch - margin - block_h
 
-        # ---------- 3.5 底衬（半透明白） ----------
-        if bg_alpha > 0:
-            pad = int(font_size * 0.45)
-            bg_x0 = max(0, x_start - pad)
-            bg_y0 = max(0, y_start - pad)
-            bg_x1 = min(cw, x_start + block_w + pad)
-            bg_y1 = min(ch, y_start + block_h + pad)
-
-            overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-            od = ImageDraw.Draw(overlay)
-            od.rectangle(
-                [bg_x0, bg_y0, bg_x1, bg_y1],
-                fill=bg_color + (bg_alpha,),
-            )
-            canvas = Image.alpha_composite(canvas, overlay)
-            draw = ImageDraw.Draw(canvas)   # 重取 draw
+        ## ---------- 3.5 底衬（半透明白） ----------
+        #if bg_alpha > 0:
+        #    pad = int(font_size * 0.45)
+        #    bg_x0 = max(0, x_start - pad)
+        #    bg_y0 = max(0, y_start - pad)
+        #    bg_x1 = min(cw, x_start + block_w + pad)
+        #    bg_y1 = min(ch, y_start + block_h + pad)
+        #
+        #    overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
+        #    od = ImageDraw.Draw(overlay)
+        #    od.rectangle(
+        #        [bg_x0, bg_y0, bg_x1, bg_y1],
+        #        fill=bg_color + (bg_alpha,),
+        #    )
+        #    canvas = Image.alpha_composite(canvas, overlay)
+        #    draw = ImageDraw.Draw(canvas)   # 重取 draw
 
         # 4. 逐列逐字绘制（从右往左）
         for ci, col in enumerate(columns):
@@ -318,6 +318,17 @@ def main():
         print(f"\n🧹 已剔除 inscription 层: {removed[:60]}...")
         print(f"   → 题词印章全交 PIL 合成")
 
+        # 负面提示词里明确禁止 AI 画题词印章
+        NO_TEXT_NEGATIVE = (
+            "calligraphy, text, chinese characters, japanese text, "
+            "kanji, kana, seal, stamp, signature, inscription, "
+            "poem text, red seal, watermark, logo, letters, words, "
+            "writing, brush writing, artist signature, "
+            "signature mark, red chop, colophon"
+        )
+        negative = f"{negative}, {NO_TEXT_NEGATIVE}"
+        print(f"   🚫 负面提示词已加入禁止文字印章")
+
     print("\n📋 各层明细:")
     for k, v in detail.items():
         print(f"  [{k:12s}] {v[:60]}")
@@ -376,7 +387,7 @@ def main():
             position="top_right",
             margin=int(min(width, height) * 0.055),
             max_chars_per_col=8,
-            bg_alpha=180,
+            # bg_alpha=180, #白色衬底，去掉
         )
         print(f"   ✅ 已渲染到画面右上角 (font={font_size}, 带底衬)")
     else:
@@ -397,14 +408,14 @@ def main():
             position="bottom_right",
             scale=0.14, margin=margin,
         )
-        # 左上：引首章（放大到 0.11）
+        # 左上：引首章（中文，避免英文偏小）
         image = sg.apply(
-            image, "ArtForge",
+            image, "東方藝術",
             style="zhu_wen", shape="rect",
             position="top_left",
             scale=0.11, margin=margin,
         )
-        print(f"\n🔖 印章: 右下「{theme}」(0.14) + 左上「ArtForge」(0.11)")
+        print(f"\n🔖 印章: 右下「{theme}」(0.14) + 左上「東方藝術」(0.11)")
     else:
         print("\n🔖 印章: 跳过")
 
