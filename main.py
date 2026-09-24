@@ -335,6 +335,13 @@ def run_pipeline(
     print(f"\n✅ 成品: {out_path}")
     print(f"📝 元信息: {meta_path}")
     print("=" * 70)
+    
+    # 9. 生成社交媒体文案 (可选)
+    if args.format_wechat:  # 需要在 argparse 里加 --format-wechat
+        from skills.wechat_formatter.formatter import WechatFormatter
+        wf = WechatFormatter(out_path, meta_path, inscription_text)
+        wf.generate_markdown(out_path.with_suffix(".md"))
+        print(f"\n📱 微信/知乎文案: {out_path.with_suffix('.md')}")    
 
 
 # ============================================================
