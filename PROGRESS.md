@@ -123,7 +123,16 @@
   - 修复 .env 加载（os.getenv 读不到 Key）
   - 自检通过: 8 主题 × 5 体裁，auto 模式 source=agnes
 - ✅ **M3 完成**（seal + aging + inscription）
-- **下次继续**：写 `compose_artwork.py` 串全流程
+
+### 2026-09-24 第 8 次会话
+- ✅ `compose_artwork.py` — 全流程合成
+  - 预设 → 出图 → 做旧 → 题词 → 钤印 → 保存
+  - InscriptionRenderer: 竖排从右往左 + 半透明白底衬
+  - --clean-prompt 默认开（AI 只画画，题词印章交 PIL）
+  - 印章放大 + 题词字号放大
+- ✅ **M3 完成**，成品验收通过
+- ⚠️ 已知小问题: 左上引首章英文（ArtForge）偏小，考虑改中文
+- **下次继续**: M4 补预设 或 修引首章
 
 ---
 
