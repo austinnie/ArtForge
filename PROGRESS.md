@@ -115,7 +115,15 @@
   - 五种效果：泛黄 / 霉斑 / 边缘磨损 / 暗角 / 噪点
   - 支持 seed 复现，已修 Pillow 13 DeprecationWarning
   - 自检通过：11 张对比图全部生成
-- **下次继续**：写 `services/inscription_generator.py`
+
+### 2026-09-24 第 7 次会话
+- ✅ `services/inscription_generator.py` — 题词生成器
+  - 三层降级: Agnes → Pollinations → 内置诗句库
+  - 修复 sys.path（services/ 下 import 不到 api_engines）
+  - 修复 .env 加载（os.getenv 读不到 Key）
+  - 自检通过: 8 主题 × 5 体裁，auto 模式 source=agnes
+- ✅ **M3 完成**（seal + aging + inscription）
+- **下次继续**：写 `compose_artwork.py` 串全流程
 
 ---
 
