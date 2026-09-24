@@ -1,0 +1,18 @@
+{
+  "name": "ukiyoe_converter",
+  "version": "1.0.0",
+  "description": "浮世绘风格转换器：输入普通图片，AI 图生图转换为浮世绘风格，并自动加盖印章",
+  "tags": ["image", "ukiyoe", "style-transfer", "seal"],
+  "dependencies": ["Pillow", "requests"],
+  "inputs": [
+    {"name": "input", "type": "string", "description": "输入图片路径", "required": true},
+    {"name": "output", "type": "string", "description": "输出图片路径", "required": false},
+    {"name": "engine", "type": "string", "description": "引擎名称", "required": false, "default": "pollinations"},
+    {"name": "strength", "type": "float", "description": "转换强度 0-1", "required": false, "default": 0.75},
+    {"name": "seal", "type": "string", "description": "印章文字", "required": false, "default": "東方藝術"}
+  ],
+  "outputs": [
+    {"name": "output_path", "description": "转换后的图片路径"}
+  ],
+  "class_name": "UkiyoeConverter"
+}
