@@ -27,6 +27,8 @@
 from __future__ import annotations
 
 import random
+import os
+import sys
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple, Union
 
@@ -38,7 +40,14 @@ from PIL import Image, ImageDraw, ImageFilter
 # 路径 & 常量
 # ============================================================
 
+# ============================================================
+# 路径修正（让 services/ 下的脚本能 import 项目根模块）
+# ============================================================
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:      # ← 新增
+    sys.path.insert(0, str(PROJECT_ROOT))  # ← 新增
+    
 TEXTURE_DIR = PROJECT_ROOT / "assets" / "textures"
 
 # 素材目录映射（如果用户放了真实纹理图，优先用素材）

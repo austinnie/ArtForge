@@ -17,6 +17,8 @@
 from __future__ import annotations
 
 import math
+import os
+import sys
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
@@ -26,8 +28,15 @@ from PIL import Image, ImageDraw, ImageFont
 # ============================================================
 # 路径 & 字体
 # ============================================================
+# ============================================================
+# 路径修正（让 services/ 下的脚本能 import 项目根模块）
+# ============================================================
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:      # ← 新增
+    sys.path.insert(0, str(PROJECT_ROOT))  # ← 新增
+    
+
 FONT_DIR = PROJECT_ROOT / "assets" / "fonts"
 
 FONT_CANDIDATES = [
