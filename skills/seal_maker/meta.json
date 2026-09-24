@@ -1,0 +1,15 @@
+{
+  "name": "seal_maker",
+  "version": "1.0.0",
+  "description": "印章制作工具，支持生成独立印章或贴图到画作",
+  "inputs": {
+    "text": "印章文字",
+    "style": "样式（zhu_wen/bai_wen）",
+    "shape": "形状（square/rect）",
+    "size": "边长（仅 make 模式）",
+    "position": "位置（仅 apply 模式）"
+  },
+  "outputs": {
+    "output_path": "生成的印章或贴图后的图片路径"
+  }
+}
