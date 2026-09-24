@@ -1,0 +1,19 @@
+# ---------- 核心 ----------
+Pillow>=10.0.0
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# ---------- 图像处理（做旧、滤镜） ----------
+numpy>=1.26.0
+opencv-python>=4.10.0
+
+# ---------- Token 计数（PromptBuilder 可选依赖） ----------
+tiktoken>=0.7.0
+
+# ---------- 可选：特定引擎 ----------
+# dashscope>=1.14.0          # 通义万相
+# tencentcloud-sdk-python    # 腾讯混元
+
+# ---------- 可选：导出 ----------
+# markdown>=3.5.0            # 微信排版
+# python-docx>=1.1.0         # Word 导出

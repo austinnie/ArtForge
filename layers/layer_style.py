@@ -10,7 +10,6 @@
   - gufeng    古风画风
   - tang      唐风画风
   - genji     源氏物语（场景作为风格使用）
-  - yokai     妖怪（作为补充）
   - art_nude  艺术裸体（骨架）
 
 导出：
@@ -55,7 +54,6 @@ LAYER = (
     + GUFENG_PROMPTS
     + TANG_PROMPTS
     + GENJI_PROMPTS
-    + YOKAI_PROMPTS
     + ART_NUDE_PROMPTS
 )
 
@@ -66,7 +64,6 @@ BY_CATEGORY = {
     "gufeng": GUFENG_PROMPTS,
     "tang": TANG_PROMPTS,
     "genji": GENJI_PROMPTS,
-    "yokai": YOKAI_PROMPTS,
     "art_nude": ART_NUDE_PROMPTS,
 }
 

@@ -44,7 +44,7 @@
 | 服务 | `services/scroll_composer.py` | ⏳ | 待填（画幅合成） |
 | 引擎 | `api_engines/__init__.py` | ⏳ | 待填（从 PromptForge 抄） |
 | 处理器 | `handlers/yokai_handler.py` | ⏳ | 待填（第一个） |
-| 预设 | `presets/yokai/tengu.py` | ⏳ | 待填（第一个） |
+| 预设 | `presets/yokai/tengu.py` | ✅ | 天狗（第一个预设） |
 | 入口 | `main.py` | ⏳ | 待填 |
 | 说明 | `README.md` | ⏳ | 待填 |
 
@@ -158,7 +158,13 @@
   - subject 36 / scene 30 / style 29 / lighting 24
   - composition 8 / inscription 19 / quality 16
   - 合计 162 条短语
-- **下次继续**：写 `core/prompt_builder.py`
+
+### 2026-09-24 第 4 次会话（续）
+- ✅ 修复 PromptBuilder token 截断（从整层裁 → 逐短语裁）
+- ✅ 修正 `layer_style.py`（去掉 yokai，style 从 29→19）
+- ✅ `presets/yokai/tengu.py` — 第一个预设
+- ✅ `compose_preset("tengu")` 验证通过
+- **下次继续**：写更多妖怪预设 或 `core/safety.py`
 
 ---
 
