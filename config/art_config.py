@@ -12,6 +12,8 @@ ArtForge 艺术风格配置
   - 唐风画风
   - 题词印章配置
   - 做旧处理配置
+  - 主色板
+  - 工具函数
 """
 
 from enum import Enum
@@ -127,6 +129,7 @@ YOKAI_DICT = {
             "hauchiwa fan, crow tengu or long-nose tengu"
         ),
         "scene": "deep mountain forest, misty peaks, ancient cedars",
+        "palette": ["赤", "山吹", "墨", "白"],
         "keywords": ["天狗", "tengu", "山伏", "鞍马山"],
     },
     "kappa": {
@@ -137,6 +140,7 @@ YOKAI_DICT = {
             "mischievous expression, cucumber"
         ),
         "scene": "riverbank, clear stream, lotus leaves, summer",
+        "palette": ["若草", "墨绿", "黄", "水色"],
         "keywords": ["河童", "kappa", "河童渊", "黄瓜"],
     },
     "kitsune": {
@@ -147,6 +151,7 @@ YOKAI_DICT = {
             "flowing tails, mystical aura, beautiful woman or fox"
         ),
         "scene": "Inari shrine, torii gates, red lanterns, autumn",
+        "palette": ["白", "金", "朱", "墨"],
         "keywords": ["九尾狐", "kitsune", "稻荷神", "狐火"],
     },
     "yuki_onna": {
@@ -157,6 +162,7 @@ YOKAI_DICT = {
             "snowy mountain, freezing mist, tragic beauty"
         ),
         "scene": "snowy mountain pass, blizzard, frozen pine trees",
+        "palette": ["白", "淡蓝", "银灰", "墨"],
         "keywords": ["雪女", "yuki-onna", "雪女传说"],
     },
     "oni": {
@@ -167,6 +173,7 @@ YOKAI_DICT = {
             "sharp teeth, wild hair, muscular"
         ),
         "scene": "hellish landscape, volcanic rocks, red sky, flames",
+        "palette": ["朱", "群青", "土黄", "墨"],
         "keywords": ["鬼", "oni", "赤鬼", "青鬼"],
     },
     "kitsune_bi": {
@@ -177,6 +184,7 @@ YOKAI_DICT = {
             "procession of foxes, wedding procession"
         ),
         "scene": "dark forest at night, blue flames, misty",
+        "palette": ["蓝紫", "靛", "墨", "淡青"],
         "keywords": ["狐火", "kitsune-bi", "狐狸嫁女"],
     },
     "hyakki_yagyo": {
@@ -187,6 +195,7 @@ YOKAI_DICT = {
             "Toriyama Sekien style, ukiyo-e, many creatures"
         ),
         "scene": "night street, paper lanterns, full moon, mist",
+        "palette": ["朱", "墨", "土黄", "深蓝"],
         "keywords": ["百鬼夜行", "hyakki yagyo", "鸟山石燕"],
     },
     "kitsune_no_yomeiri": {
@@ -197,6 +206,7 @@ YOKAI_DICT = {
             "rainy sunny day, mysterious, elegant"
         ),
         "scene": "forest path in light rain, sunbeams, lanterns",
+        "palette": ["朱", "金", "淡绿", "白"],
         "keywords": ["狐狸嫁女", "狐の嫁入り"],
     },
     "noppera_bo": {
@@ -207,6 +217,7 @@ YOKAI_DICT = {
             "traditional Japanese horror, eerie"
         ),
         "scene": "dark alley at night, paper lantern, mist",
+        "palette": ["白", "墨", "灰"],
         "keywords": ["野篦坊", "noppera-bo", "无脸怪"],
     },
     "roku_ro_kubi": {
@@ -217,6 +228,7 @@ YOKAI_DICT = {
             "traditional Japanese yokai, eerie beauty"
         ),
         "scene": "Edo period bedroom, paper screens, candlelight",
+        "palette": ["墨", "朱", "土黄", "米白"],
         "keywords": ["辘轳首", "rokurokubi", "长颈妖怪"],
     },
 }
@@ -292,6 +304,7 @@ GENJI_SCENES = {
             "veranda, garden with pond, "
             "courtiers in sokutai, ladies in junihitoe"
         ),
+        "palette": ["朱", "群青", "绿青", "金"],
         "keywords": ["平安", "宫廷", "寝殿造"],
     },
     "junihitoe": {
@@ -301,6 +314,7 @@ GENJI_SCENES = {
             "long black hair, fan, "
             "seated on veranda, poetic expression"
         ),
+        "palette": ["紫", "朱", "绿", "金", "白"],
         "keywords": ["十二单", "女房装束"],
     },
     "byobu_emaki": {
@@ -310,6 +324,7 @@ GENJI_SCENES = {
             "illustrated handscroll, yamato-e, "
             "court scenes, sliding doors, gold clouds"
         ),
+        "palette": ["金", "朱", "群青", "绿青"],
         "keywords": ["源氏物语绘卷", "大和绘"],
     },
     "moon_viewing": {
@@ -319,6 +334,7 @@ GENJI_SCENES = {
             "autumn night, full moon, "
             "courtiers playing koto and flute, poetry"
         ),
+        "palette": ["银白", "深蓝", "朱", "金"],
         "keywords": ["观月", "月见", "中秋"],
     },
     "cherry_blossom": {
@@ -328,6 +344,7 @@ GENJI_SCENES = {
             "spring, petals falling, "
             "ladies in junihitoe, courtiers, poetry"
         ),
+        "palette": ["桜粉", "朱", "绿", "金"],
         "keywords": ["赏樱", "花见", "春"],
     },
 }
@@ -368,6 +385,7 @@ TANG_STYLES = {
             "court ladies playing music, "
             "silk robes, gold ornaments"
         ),
+        "palette": ["朱", "金", "翠绿", "石青"],
         "keywords": ["大唐", "宫苑", "仕女"],
     },
     "tang_horse": {
@@ -378,6 +396,7 @@ TANG_STYLES = {
             "muscular, saddle, "
             "Han Gan painting influence"
         ),
+        "palette": ["褐", "三彩黄", "绿", "白"],
         "keywords": ["唐马", "韩干", "昭陵六骏"],
     },
 }
@@ -404,8 +423,23 @@ ART_NUDE_STYLES = {
     "_placeholder": {
         "name": "（待填充）",
         "prompt": "",
+        "palette": [],
         "keywords": [],
     },
+}
+
+
+# ============================================================
+# 分类 → 画风映射（新增，统一管理）
+# ============================================================
+
+CATEGORY_TO_STYLES = {
+    "japanese": JAPANESE_STYLES,
+    "yokai": YOKAI_DICT,          # 妖怪用 YOKAI_DICT 当画风池
+    "gufeng": GUFENG_STYLES,
+    "genji": GENJI_SCENES,
+    "tang": TANG_STYLES,
+    "art_nude": ART_NUDE_STYLES,
 }
 
 
@@ -414,11 +448,11 @@ ART_NUDE_STYLES = {
 # ============================================================
 
 SCROLL_SIZES = {
-    "立轴": {"ratio": "9:16", "width": 768, "height": 1365},
-    "横卷": {"ratio": "16:9", "width": 1365, "height": 768},
-    "屏风": {"ratio": "4:3", "width": 1024, "height": 768},
-    "团扇": {"ratio": "1:1", "width": 1024, "height": 1024},
-    "册页": {"ratio": "3:4", "width": 768, "height": 1024},
+    "立轴": {"en": "lizhou",   "ratio": "9:16",  "width": 768,  "height": 1365},
+    "横卷": {"en": "hengjuan", "ratio": "16:9",  "width": 1365, "height": 768},
+    "屏风": {"en": "pingfeng", "ratio": "4:3",   "width": 1024, "height": 768},
+    "团扇": {"en": "tuanshan", "ratio": "1:1",   "width": 1024, "height": 1024},
+    "册页": {"en": "ceye",     "ratio": "3:4",   "width": 768,  "height": 1024},
 }
 
 
@@ -452,6 +486,13 @@ INSCRIPTION_CONFIG = {
         "左下": (0.10, 0.92),
         "右上": (0.85, 0.05),
         "左上": (0.10, 0.05),
+    },
+    # 英文别名，代码里用英文更规范
+    "seal_positions_en": {
+        "bottom_right": (0.85, 0.92),
+        "bottom_left":  (0.10, 0.92),
+        "top_right":    (0.85, 0.05),
+        "top_left":     (0.10, 0.05),
     },
     "seal_default_position": "左下",
     "font_family": "毛笔楷书",
@@ -553,44 +594,67 @@ MASTER_PALETTE = {
 # 工具函数
 # ============================================================
 
+def get_styles(category: str) -> dict:
+    """获取某分类下的所有画风定义。"""
+    return CATEGORY_TO_STYLES.get(category, {})
+
+
+def get_style(category: str, style_key: str) -> dict:
+    """获取单个画风的完整定义。"""
+    return get_styles(category).get(style_key, {})
+
+
 def get_style_prompt(category: str, style_key: str) -> str:
-    """根据分类和 key 获取画风 prompt"""
-    mapping = {
-        "japanese": JAPANESE_STYLES,
-        "gufeng": GUFENG_STYLES,
-        "tang": TANG_STYLES,
-        "art_nude": ART_NUDE_STYLES,
-    }
-    styles = mapping.get(category, {})
-    item = styles.get(style_key, {})
-    return item.get("prompt", "")
+    """根据分类和 key 获取画风 prompt。"""
+    return get_style(category, style_key).get("prompt", "")
 
 
-def get_yokai_prompt(yokai_key: str) -> dict:
-    """获取妖怪的 prompt 和 scene"""
+def get_yokai(yokai_key: str) -> dict:
+    """获取妖怪的完整定义（prompt + scene + palette）。"""
     return YOKAI_DICT.get(yokai_key, {})
 
 
+# 兼容旧名
+get_yokai_prompt = get_yokai
+
+
+def get_palette(category: str, style_key: str) -> list:
+    """获取某画风的配色方案。"""
+    return get_style(category, style_key).get("palette", [])
+
+
 def list_all_categories() -> list:
-    """列出所有分类"""
+    """列出所有分类。"""
     return [(c.key, c.cn) for c in ArtCategory]
 
 
 def list_styles_by_category(category: str) -> dict:
-    """列出某分类下的所有画风"""
-    mapping = {
-        "japanese": JAPANESE_STYLES,
-        "gufeng": GUFENG_STYLES,
-        "tang": TANG_STYLES,
-        "art_nude": ART_NUDE_STYLES,
-    }
-    styles = mapping.get(category, {})
+    """列出某分类下的所有画风 {key: name}。"""
+    styles = get_styles(category)
     return {k: v.get("name", k) for k, v in styles.items()}
 
 
 def get_scroll_size(scroll_cn: str) -> dict:
-    """获取画幅尺寸"""
+    """获取画幅尺寸。"""
     return SCROLL_SIZES.get(scroll_cn, SCROLL_SIZES["立轴"])
+
+
+def get_seal_position(position: str = None) -> tuple:
+    """获取印章坐标（支持中英文）。"""
+    position = position or INSCRIPTION_CONFIG["seal_default_position"]
+    if position in INSCRIPTION_CONFIG["seal_positions"]:
+        return INSCRIPTION_CONFIG["seal_positions"][position]
+    if position in INSCRIPTION_CONFIG["seal_positions_en"]:
+        return INSCRIPTION_CONFIG["seal_positions_en"][position]
+    return INSCRIPTION_CONFIG["seal_positions"][
+        INSCRIPTION_CONFIG["seal_default_position"]
+    ]
+
+
+def get_texture(texture_key: str = None) -> dict:
+    """获取纸张纹理配置。"""
+    texture_key = texture_key or AGING_CONFIG["default_texture"]
+    return AGING_CONFIG["paper_textures"].get(texture_key, {})
 
 
 # ============================================================
@@ -637,6 +701,17 @@ if __name__ == "__main__":
 
     print(f"\n🎨 传统颜料 ({len(MASTER_PALETTE['传统颜料'])} 色)")
     print(f"🎨 日本传统色 ({len(MASTER_PALETTE['日本传统色'])} 色)")
+
+    # 工具函数自检
+    print(f"\n🧪 工具函数自检:")
+    print(f"  get_styles('japanese')      → {len(get_styles('japanese'))} 个")
+    print(f"  get_styles('yokai')         → {len(get_styles('yokai'))} 个")
+    print(f"  get_style_prompt('tang','dunhuang')  → {get_style_prompt('tang','dunhuang')[:50]}...")
+    print(f"  get_palette('gufeng','gong_bi')      → {get_palette('gufeng','gong_bi')}")
+    print(f"  get_scroll_size('立轴')              → {get_scroll_size('立轴')}")
+    print(f"  get_seal_position('左下')            → {get_seal_position('左下')}")
+    print(f"  get_seal_position('bottom_right')    → {get_seal_position('bottom_right')}")
+    print(f"  get_texture('silk')                  → {get_texture('silk')}")
 
     print("\n" + "=" * 60)
     print("  ✅ 自检通过")
