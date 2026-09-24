@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# 输出（生成的艺术作品通常不提交，或者只提交精选）
+output/*
+!output/.gitkeep
+!output/**/.gitkeep
+!output/README.md
+
+# 日志
+logs/
+!logs/.gitkeep
+
+# 临时
+output/tmp/
+*.tmp
+
+# 模型（太大）
+*.safetensors
+*.ckpt
+*.bin
+*.pth
+
+# 环境变量
+.env
+.env.local
+.user_config.json
+.wechat_state.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 素材（如需入库，保留）
+# assets/seals/*.png
+# assets/textures/**/*.jpg
+
+# 敏感输出（艺术裸体等，按需保留）
+# output/art_nude/
