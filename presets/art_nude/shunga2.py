@@ -1,6 +1,6 @@
-# presets/art_nude/shunga.py
+# presets/art_nude/shunga2.py
 PRESET = {
-    "name": "shunga",
+    "name": "shunga2",
     "category": "art_nude",
     "description": "浮世绘春画 - 菱川师宣/铃木春信/喜多川歌麿风格，江户室内器物与季节花",
     "layers": {

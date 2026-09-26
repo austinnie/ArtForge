@@ -1,6 +1,6 @@
-# presets/art_nude/impressionist.py
+# presets/art_nude/impressionist2.py
 PRESET = {
-    "name": "impressionist",
+    "name": "impressionist2",
     "category": "art_nude",
     "description": "印象派-雷诺阿 平民浴女，温暖朴素",
     "layers": {

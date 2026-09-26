@@ -1,4 +1,4 @@
-# presets/art_nude/heian_emaki.py
+# presets/art_nude/heian_emaki2.py
 PRESET = {
     "name": "heian_emaki2",
     "category": "art_nude",
