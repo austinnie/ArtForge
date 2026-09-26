@@ -51,4 +51,8 @@ Thumbs.db
 # assets/textures/**/*.jpg
 
 # 敏感输出（艺术裸体等，按需保留）
-# output/art_nude/
+# output/art_nude/ 
+# PyInstaller 
+*.spec 
+build/ 
+dist/ 
