@@ -1,42 +1,46 @@
 # compose_artwork.py
 """
-ArtForge 全流程合成 — 一条龙出一张带题词/印章/做旧的完整作品
+ArtForge 合成工具库
 
-流程:
-    1. PromptBuilder   → 从预设组合 prompt（默认剔除 inscription 层）
-    2. API 引擎        → 出图
-    3. AgingProcessor  → 做旧（宣纸纹理 + 老化）
-    4. InscriptionRenderer → 题词竖排渲染到画面（带底衬）
-    5. SealGenerator   → 钤印（右下 + 左上）
-    6. 保存成品 + 元信息
+本文件提供两类内容：
 
-设计决策:
-    - 默认 --clean-prompt: 从 prompt 移除 inscription 层，
-      让 AI 只画画，题词印章全交 PIL 合成（可控、可复现、可改字）
+【工具类 / 函数】（被 main.py / GUI / 其他脚本复用）
+  - ARTIST_NAME          ：作者名（印章、水印、元信息用）
+  - COMPOSITION_SIZE     ：画幅 → 尺寸映射
+  - InscriptionRenderer  ：题词竖排渲染器
+  - load_config()        ：读 .env → API 配置 dict
+  - pick_size()          ：根据 composition 层推画幅尺寸
+  - theme_from_preset()  ：根据预设推题词主题
 
-用法:
-    python compose_artwork.py
-    python compose_artwork.py --preset tengu --engine pollinations
-    python compose_artwork.py --preset kappa --format haiku --seed 42
-    python compose_artwork.py --no-aging --no-inscription --no-seal
-    python compose_artwork.py --no-clean-prompt   # 让 AI 自己画题词印章
+【使用方式】
+  from compose_artwork import (
+      ARTIST_NAME,
+      InscriptionRenderer,
+      load_config,
+      pick_size,
+      theme_from_preset,
+  )
+
+【CLI 入口】
+  请使用 main.py（唯一 CLI 入口）：
+      python main.py --preset tengu --category yokai
 """
 
 from __future__ import annotations
 
-import argparse
 import os
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
+
 # ============================================================
 # 个人配置（请修改为你的名字）
 # ============================================================
-ARTIST_NAME = "东方艺术"  # ✅ 改成你的名字，如 "李太白"、"Zhang San"
+ARTIST_NAME = "东方艺术"  # ✅ 改成你的名字
+
 
 # ============================================================
 # 路径修正 + .env
@@ -71,7 +75,7 @@ COMPOSITION_SIZE = {
 
 
 # ============================================================
-# 题词渲染器（竖排，从右往左，带底衬）
+# 题词渲染器（竖排，从右往左）
 # ============================================================
 
 class InscriptionRenderer:
@@ -131,7 +135,7 @@ class InscriptionRenderer:
             margin:            边距
             line_gap_ratio:    列间距（相对字号）
             max_chars_per_col: 每列最多几字，超出换列
-            bg_alpha:          底衬透明度 0-255（0 表示不加底衬）
+            bg_alpha:          底衬透明度 0-255（0 = 不加底衬）
             bg_color:          底衬颜色（默认宣纸米白）
 
         Returns:
@@ -186,23 +190,6 @@ class InscriptionRenderer:
         else:
             y_start = ch - margin - block_h
 
-        ## ---------- 3.5 底衬（半透明白） ----------
-        #if bg_alpha > 0:
-        #    pad = int(font_size * 0.45)
-        #    bg_x0 = max(0, x_start - pad)
-        #    bg_y0 = max(0, y_start - pad)
-        #    bg_x1 = min(cw, x_start + block_w + pad)
-        #    bg_y1 = min(ch, y_start + block_h + pad)
-        #
-        #    overlay = Image.new("RGBA", canvas.size, (0, 0, 0, 0))
-        #    od = ImageDraw.Draw(overlay)
-        #    od.rectangle(
-        #        [bg_x0, bg_y0, bg_x1, bg_y1],
-        #        fill=bg_color + (bg_alpha,),
-        #    )
-        #    canvas = Image.alpha_composite(canvas, overlay)
-        #    draw = ImageDraw.Draw(canvas)   # 重取 draw
-
         # 4. 逐列逐字绘制（从右往左）
         for ci, col in enumerate(columns):
             x = x_start + (n_cols - 1 - ci) * col_gap
@@ -222,7 +209,7 @@ class InscriptionRenderer:
 
 
 # ============================================================
-# 配置 / 工具
+# 工具函数
 # ============================================================
 
 def load_config() -> Dict[str, str]:
@@ -289,242 +276,32 @@ def theme_from_preset(preset: str, category: str) -> str:
         "feitian":     "飞天",
     }
 
-    # 1. 显式映射
     if preset in PRESET_TO_THEME:
         return PRESET_TO_THEME[preset]
 
-    # 2. 画风类 → 通用
     if category in ("japanese", "gufeng"):
         return "通用"
 
-    # 3. 兜底
     return preset
 
+
 # ============================================================
-# 主流程
+# 自检（确保工具能正常 import）
 # ============================================================
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--preset", default="tengu")
-    ap.add_argument("--category", default="yokai")
-    ap.add_argument("--engine", default="pollinations",
-                    choices=["pollinations", "agnes", "siliconflow"])
-    ap.add_argument("--seed", type=int, default=None)
-    ap.add_argument("--format", default="waka",
-                    choices=["wuyan", "qiyan", "waka", "haiku", "tiba", "auto"])
-    ap.add_argument("--texture", default="xuan_paper",
-                    choices=["xuan_paper", "silk", "aged", "brown"])
-    ap.add_argument("--strength", type=float, default=0.55)
-    ap.add_argument("--no-aging", action="store_true")
-    ap.add_argument("--no-inscription", action="store_true")
-    ap.add_argument("--no-seal", action="store_true")
-    ap.add_argument("--out", default=None)
-
-    # clean-prompt: 默认开启，用 --no-clean-prompt 关闭
-    ap.add_argument("--clean-prompt", dest="clean_prompt",
-                    action="store_true", default=True,
-                    help="从 prompt 移除 inscription 层（默认开启）")
-    ap.add_argument("--no-clean-prompt", dest="clean_prompt",
-                    action="store_false",
-                    help="保留 inscription 层（让 AI 自己画题词印章）")
-
-    ap.add_argument("--language", default="auto",
-                    choices=["auto", "chinese", "japanese"],
-                    help="题词语言（auto=按分类自动，chinese=中文，japanese=日文）")
-                    
-    args = ap.parse_args()
-
-    print("=" * 70)
-    print("  ArtForge 全流程合成")
-    print("=" * 70)
-
-    # ---------- 1. Prompt ----------
-    from core.prompt_builder import PromptBuilder
-
-    print(f"\n📚 预设: {args.category}/{args.preset}")
-    builder = PromptBuilder()
-    prompt, detail = builder.compose_preset(
-        args.preset, category=args.category, return_detail=True,
-    )
-    negative = builder.get_negative()
-
-    # 推题词主题
-    theme = theme_from_preset(args.preset, args.category)
-    print(f"   🎯 题词主题: {theme}")
-    
-    # 剔除 inscription 层（方案 A）
-    if args.clean_prompt and "inscription" in detail:
-        removed = detail.pop("inscription")
-        parts = [detail[k] for k in builder.LAYER_ORDER if detail.get(k)]
-        prompt = ", ".join(parts)
-        print(f"\n🧹 已剔除 inscription 层: {removed[:60]}...")
-        print(f"   → 题词印章全交 PIL 合成")
-
-        # 负面提示词里明确禁止 AI 画题词印章
-        NO_TEXT_NEGATIVE = (
-            "calligraphy, text, chinese characters, japanese text, "
-            "kanji, kana, seal, stamp, signature, inscription, "
-            "poem text, red seal, watermark, logo, letters, words, "
-            "writing, brush writing, artist signature, "
-            "signature mark, red chop, colophon"
-        )
-        negative = f"{negative}, {NO_TEXT_NEGATIVE}"
-        print(f"   🚫 负面提示词已加入禁止文字印章")
-
-    print("\n📋 各层明细:")
-    for k, v in detail.items():
-        print(f"  [{k:12s}] {v[:60]}")
-
-    # ---------- 2. 出图 ----------
-    width, height = pick_size(detail)
-    print(f"\n🖼️  画幅: {width}x{height}")
-
-    from api_engines import create_engine
-
-    config = load_config()
-    engine = create_engine(args.engine, config)
-
-    print(f"\n🎨 生成中（10-60 秒）...")
-    image = engine.generate_single(
-        prompt=prompt, negative=negative,
-        width=width, height=height, seed=args.seed,
-    )
-    if image.mode != "RGBA":
-        image = image.convert("RGBA")
-    print(f"   ✅ 出图: {image.size[0]}x{image.size[1]}")
-
-    # ---------- 3. 做旧 ----------
-    if not args.no_aging:
-        from services.aging_processor import AgingProcessor
-        ap_proc = AgingProcessor(seed=args.seed)
-        rgb = image.convert("RGB")
-        aged = ap_proc.apply(rgb, texture=args.texture, strength=args.strength)
-        image = aged.convert("RGBA")
-        print(f"\n📜 做旧: {args.texture} (strength={args.strength})")
-    else:
-        print("\n📜 做旧: 跳过")
-
-    # ---------- 4. 题词 ----------
-    inscription_text = ""
-    if not args.no_inscription:
-        from services.inscription_generator import InscriptionGenerator
-
-        
-        ig = InscriptionGenerator(seed=args.seed)
-        inscription_text, meta = ig.generate(
-            theme=theme, format=args.format, return_meta=True,
-            backend=args.engine if args.engine in ("agnes", "pollinations") else "auto",
-            category=args.category,      # ✅ 新增
-            language=args.language,      # ✅ 新增
-        )
-        lang_cn = "中文" if meta.get("language") == "chinese" else "日文"
-        print(f"\n🖋️  题词 ({lang_cn}, {meta['format_cn']}, source={meta['source']}):")
-    
-        for line in inscription_text.split("\n"):
-            print(f"   {line}")
-
-        # 渲染到画面（字号放大到 0.045）
-        renderer = InscriptionRenderer()
-        font_size = max(24, int(min(width, height) * 0.045))
-        image = renderer.render(
-            image,
-            inscription_text,
-            font_size=font_size,
-            color=(45, 40, 35),
-            position="top_right",
-            margin=int(min(width, height) * 0.055),
-            max_chars_per_col=8,
-            # bg_alpha=180, #白色衬底，去掉
-        )
-        print(f"   ✅ 已渲染到画面右上角 (font={font_size}")
-    else:
-        print("\n🖋️  题词: 跳过")
-
-    # ---------- 5. 印章 ----------
-# 在 compose_artwork.py 的印章部分（约第 280 行附近），修改为：
-
-    # ---------- 5. 印章 ----------
-    if not args.no_seal:
-        from services.seal_generator import SealGenerator
-        sg = SealGenerator()
-        margin = int(min(width, height) * 0.05)
-        
-        # ✅ 修复：印章下加半透明白底衬，解决浅色背景对比不足
-        def _add_seal_backdrop(img, position, size, margin):
-            """在印章位置加半透明底衬（自然米黄，无红框，边缘羽化）"""
-            w, h = img.size
-            overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
-            draw = ImageDraw.Draw(overlay)
-            pad = int(size * 0.12)  # 从 0.15 降到 0.12
-            if "bottom_right" in position:
-                x0 = w - margin - size - pad
-                y0 = h - margin - size - pad
-                x1 = w - margin + pad
-                y1 = h - margin + pad
-            elif "top_left" in position:
-                x0 = margin - pad
-                y0 = margin - pad
-                x1 = margin + size + pad
-                y1 = margin + size + pad
-            else:
-                return img
-            # ✅ 改成自然米黄色（和宣纸接近），透明度从 140 降到 90
-            draw.rectangle([x0, y0, x1, y1], fill=(245, 240, 225, 90))
-            # ✅ 边缘羽化（高斯模糊）
-            from PIL import ImageFilter
-            overlay = overlay.filter(ImageFilter.GaussianBlur(radius=3))
-            return Image.alpha_composite(img, overlay)
-        
-        # 右下：主题印
-        image = sg.apply_scheme(
-            image, ARTIST_NAME,
-            scheme="contrast",
-            margin_ratio=0.05,
-        )
-        print(f"\n🔖 印章: 右下「{ARTIST_NAME}」(0.14) + 左上「{ARTIST_NAME}」(0.11)")
-    else:
-        print("\n🔖 印章: 跳过")
-
-    # ---------- 6. 保存 ----------
-    out_dir = PROJECT_ROOT / "output" / args.category
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    if args.out:
-        out_path = Path(args.out)
-    else:
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = out_dir / f"{args.preset}_{ts}.png"
-
-    final = image.convert("RGB")
-    final.save(out_path, quality=95)
-
-    # 元信息
-    meta_path = out_path.with_suffix(".txt")
-    with open(meta_path, "w", encoding="utf-8") as f:
-        f.write(f"preset: {args.preset}\n")
-        f.write(f"category: {args.category}\n")
-        f.write(f"engine: {args.engine}\n")
-        f.write(f"seed: {args.seed}\n")
-        f.write(f"size: {final.size[0]}x{final.size[1]}\n")
-        f.write(f"texture: {args.texture}\n")
-        f.write(f"strength: {args.strength}\n")
-        f.write(f"clean_prompt: {args.clean_prompt}\n")
-        f.write(f"\nprompt:\n{prompt}\n")
-        f.write(f"\nnegative:\n{negative}\n")
-        f.write(f"\nlayers:\n")
-        for k, v in detail.items():
-            f.write(f"  {k}: {v}\n")
-        if inscription_text:
-            f.write(f"\ninscription:\n{inscription_text}\n")
-
-    print(f"\n✅ 成品: {out_path}")
-    print(f"📝 元信息: {meta_path}")
-
-    print("\n" + "=" * 70)
-    print("  ✅ 全流程完成")
-    print("=" * 70)
-
 
 if __name__ == "__main__":
-    main()
+    print("=" * 70)
+    print("  compose_artwork.py — 工具库自检")
+    print("=" * 70)
+    print(f"\n🔍 ARTIST_NAME: {ARTIST_NAME}")
+    print(f"🔍 COMPOSITION_SIZE: {list(COMPOSITION_SIZE.keys())}")
+    print(f"🔍 InscriptionRenderer 字体: ", end="")
+    r = InscriptionRenderer()
+    print(r.font_path.name if r.font_path else "（默认字体）")
+    print(f"🔍 theme_from_preset('tengu', 'yokai'): {theme_from_preset('tengu', 'yokai')}")
+    print(f"🔍 theme_from_preset('shui_mo', 'gufeng'): {theme_from_preset('shui_mo', 'gufeng')}")
+    print(f"🔍 pick_size({{'composition': 'horizontal'}}): {pick_size({'composition': 'horizontal'})}")
+    print(f"🔍 load_config() keys: {list(load_config().keys())}")
+    print("\n" + "=" * 70)
+    print("  ✅ 工具库自检完成（提示：CLI 请用 main.py）")
+    print("=" * 70)
