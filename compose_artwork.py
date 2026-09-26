@@ -477,22 +477,10 @@ def main():
             return Image.alpha_composite(img, overlay)
         
         # 右下：主题印
-        seal_size = int(min(width, height) * 0.14)
-        image = _add_seal_backdrop(image, "bottom_right", seal_size, margin)
-        image = sg.apply(
+        image = sg.apply_scheme(
             image, ARTIST_NAME,
-            style="zhu_wen", shape="square",
-            position="bottom_right",
-            scale=0.14, margin=margin,
-        )
-        # 左上：引首章
-        seal_size2 = int(min(width, height) * 0.11)
-        image = _add_seal_backdrop(image, "top_left", seal_size2, margin)
-        image = sg.apply(
-            image, ARTIST_NAME,
-            style="zhu_wen", shape="rect",
-            position="top_left",
-            scale=0.11, margin=margin,
+            scheme="contrast",
+            margin_ratio=0.05,
         )
         print(f"\n🔖 印章: 右下「{ARTIST_NAME}」(0.14) + 左上「{ARTIST_NAME}」(0.11)")
     else:

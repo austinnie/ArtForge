@@ -60,7 +60,8 @@ def _open_dir(path) -> str:
 
 
 def run_pipeline(category, preset, engine_name, composition,
-                 use_aging, use_inscription, use_seal, use_watermark, seed):
+                 use_aging, use_inscription, use_seal, use_watermark,
+                 seal_scheme, seed):
     logs = []
     try:
         from core.prompt_builder import PromptBuilder
@@ -148,25 +149,18 @@ def run_pipeline(category, preset, engine_name, composition,
             except Exception as e:
                 logs.append(f"⚠️ 题词失败（跳过）: {e}")
 
-        # ---------- 5. 印章 ----------
+        # ---------- 5. 印章（方案化）----------
         if use_seal:
             try:
                 from services.seal_generator import SealGenerator
                 sg = SealGenerator()
-                margin = int(min(width, height) * 0.05)
-                image = sg.apply(
+                image = sg.apply_scheme(
                     image, ARTIST_NAME,
-                    style="zhu_wen", shape="square",
-                    position="bottom_right",
-                    scale=0.14, margin=margin,
+                    scheme=seal_scheme,
+                    margin_ratio=0.05,
                 )
-                image = sg.apply(
-                    image, ARTIST_NAME,
-                    style="zhu_wen", shape="rect",
-                    position="top_left",
-                    scale=0.11, margin=margin,
-                )
-                logs.append(f"✅ 印章「{ARTIST_NAME}」")
+                scheme_name = sg.SIGNATURE_SCHEMES[seal_scheme]["name"]
+                logs.append(f"✅ 印章「{ARTIST_NAME}」— {scheme_name}")
             except Exception as e:
                 logs.append(f"⚠️ 印章失败（跳过）: {e}")
 
@@ -245,6 +239,18 @@ def build():
                 use_seal = gr.Checkbox(True, label="印章")
                 use_watermark = gr.Checkbox(True, label="水印")
 
+            #  印章选择
+            seal_scheme = gr.Dropdown(
+                choices=[
+                    ("传统经典（朱文方 + 朱文长方）", "classic"),
+                    ("对比鲜明（白文方 + 朱文长方）", "contrast"),
+                    ("华丽大气（双边框 + 长方 + 圆印）", "luxury"),
+                    ("简洁（只有右下朱文方印）", "minimal"),
+                ],
+                value="contrast",
+                label="印章方案",
+            )
+            
             seed = gr.Number(value=-1,
                              label="随机种子（-1 或留空=随机）",
                              precision=0)
@@ -262,7 +268,8 @@ def build():
     btn.click(
         run_pipeline,
         inputs=[category, preset, engine_name, composition,
-                use_aging, use_inscription, use_seal, use_watermark, seed],
+                use_aging, use_inscription, use_seal, use_watermark,
+                seal_scheme, seed],
         outputs=[image_out, log_out, path_out],
     )
 

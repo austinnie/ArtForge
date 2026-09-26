@@ -280,10 +280,11 @@ def run_pipeline(
         from services.seal_generator import SealGenerator
         sg = SealGenerator()
         margin = int(min(width, height) * 0.05)
-        image = sg.apply(image, ARTIST_NAME, style="zhu_wen", shape="square",
-                         position="bottom_right", scale=0.14, margin=margin)
-        image = sg.apply(image, ARTIST_NAME, style="zhu_wen", shape="rect",
-                         position="top_left", scale=0.11, margin=margin)
+        image = sg.apply_scheme(
+            image, ARTIST_NAME,
+            scheme="contrast",
+            margin_ratio=0.05,
+        )
         print(f"\n🔖 印章: 右下「{ARTIST_NAME}」+ 左上「{ARTIST_NAME}」")
 
 
