@@ -68,6 +68,8 @@ class SealGenerator:
 
     # ---------- 字体 ----------
 
+    # ---------- 字体 ----------
+
     def _resolve_font(self, font_path) -> Optional[Path]:
         if font_path:
             p = Path(font_path)
@@ -80,21 +82,55 @@ class SealGenerator:
         print("   ⚠️ 未找到中文字体，将用 Pillow 默认字体")
         return None
 
-    def _load_font(self, size: int) -> ImageFont.FreeTypeFont:        
-        # ✅ 专属小篆字体优先（用于 ARTIST_NAME 落款印章）
+    @staticmethod
+    def _has_all_glyphs(font: ImageFont.FreeTypeFont, text: str) -> bool:
+        """检查字体是否包含 text 中每个字符的字形"""
+        try:
+            for ch in text:
+                if ch.isspace():
+                    continue
+                mask = font.getmask(ch)
+                if mask.size[0] <= 1 or mask.size[1] <= 1:
+                    return False
+            return True
+        except Exception:
+            return False
+
+    def _load_font(self, size: int) -> ImageFont.FreeTypeFont:
+        """
+        加载字体（带缺字检测）：
+        1. 优先小篆（Mini_zhuan.ttf），但检测缺字时 fallback
+        2. 再尝试 __init__ 指定的字体
+        3. 最后系统字体
+        """
+        # 1. 小篆优先，但要检查「」四字是否都支持
         zhuan_font = PROJECT_ROOT / "assets" / "fonts" / "Mini_zhuan.ttf"
         if zhuan_font.exists():
             try:
-                return ImageFont.truetype(str(zhuan_font), size)
-            except Exception:
-                pass
+                f = ImageFont.truetype(str(zhuan_font), size)
+                if self._has_all_glyphs(f, "东方艺术"):
+                    return f
+                else:
+                    print(f"   ⚠️ 小篆字体缺字，回退系统字体")
+            except Exception as e:
+                print(f"   ⚠️ 小篆字体加载失败: {e}，回退系统字体")
 
-        # ↓↓↓ 以下是它原本就有的代码，不要删 ↓↓↓
+        # 2. __init__ 指定的字体
         if self.font_path and Path(self.font_path).exists():
             try:
                 return ImageFont.truetype(str(self.font_path), size)
             except Exception:
                 pass
+
+        # 3. 系统字体兜底（按优先级）
+        for p in FONT_CANDIDATES:
+            if p.exists():
+                try:
+                    return ImageFont.truetype(str(p), size)
+                except Exception:
+                    continue
+
+        # 4. Pillow 默认
         return ImageFont.load_default()
 
     # ---------- 排版：把文字拆成行列 ----------
