@@ -6,57 +6,47 @@ PRESET = {
     "category": "gufeng",
     "layers": {
         "subject": [
-            "elegant court lady in flowing hanfu, "
-            "fine line drawing, no color, "
-            "ribbons and hairpins, "
-            "holding lotus flower",
-            "celestial being flying, "
-            "flowing drapery suggested by lines, "
-            "flower crown, "
-            "in the style of Wu Daozi",
-            "noble horse with saddle, "
-            "fine line contour, "
-            "muscular anatomy, "
-            "in the style of Li Gonglin's Five Horses",
-            "Buddhist deity with many arms, "
-            "intricate line detail, "
-            "serene expression",
+            "elegant court lady in flowing hanfu, fine line drawing, no color, ribbons and hairpins, holding lotus flower",
+            "celestial being flying, flowing drapery suggested by lines, flower crown, in the style of Wu Daozi",
+            "noble horse with saddle, fine line contour, muscular anatomy, in the style of Li Gonglin's Five Horses",
+            "Buddhist deity with many arms, intricate line detail, serene expression",
+            "Buddhist arhat in meditation, line contour, expressive face, fine drapery folds, in the style of Li Gonglin",
+            "scholar beneath willow tree, flowing robe, fine lines, contemplative posture",
         ],
         "scene": [
-            "plain background, "
-            "no setting, focus on figure",
-            "simple ground line, "
-            "vast empty space",
-            "subtle flower or cloud outline, "
-            "minimal context",
+            "plain background, no setting, focus on figure",
+            "simple ground line, vast empty space",
+            "subtle flower or cloud outline, minimal context",
+            "single bamboo branch, sparse leaves, negative space",
+            "lotus pond suggested by a few lines, minimal water",
         ],
         "style": [
-            "Chinese baimiao painting, "
-            "pure line drawing, no color, "
-            "fine even brushwork, "
-            "elegant contours, "
-            "in the style of Li Gonglin",
-            "traditional Chinese outline drawing, "
-            "monochrome ink lines, "
-            "calligraphic quality, "
-            "in the style of Wu Daozi's celestial beings",
+            "Chinese baimiao painting, pure line drawing, no color, fine even brushwork, elegant contours, in the style of Li Gonglin",
+            "traditional Chinese outline drawing, monochrome ink lines, calligraphic quality, in the style of Wu Daozi's celestial beings",
+            "Chinese baimiao painting, iron-wire line technique, refined contour, in the style of Li Gonglin and Zhao Mengfu",
+            "traditional Chinese line drawing, dry brush contour, refined restraint, in the style of Chen Hongshou",
         ],
         "lighting": [
-            "flat even lighting, no shadows, "
-            "focus on line quality",
-            "soft ambient light, "
-            "no modeling",
+            "flat even lighting, no shadows, focus on line quality",
+            "soft ambient light, no modeling",
+            "pure white paper light, no shading, calligraphic clarity",
+            "even diffused studio light, emphasis on line precision",
         ],
         "composition": [
             "vertical hanging scroll, lidu",
             "horizontal handscroll",
             "square album leaf",
+            "round fan painting, tuanshan",
+        ],
+        "inscription": [
+            "poetic inscription in fine running script, subtle ink calligraphy, single red seal",
+            "classical couplet in elegant regular script, paired red seals",
+            "brief colophon in cursive calligraphy, single red seal, discreet ink",
         ],
         "quality": [
-            "masterpiece, best quality, "
-            "elegant Chinese line drawing",
-            "masterpiece, refined brushwork, "
-            "pure contour lines, 8k",
+            "masterpiece, best quality, elegant Chinese line drawing",
+            "masterpiece, refined brushwork, pure contour lines, 8k",
+            "masterpiece, museum-quality baimiao, refined line elegance, 8k",
         ],
     },
 }
