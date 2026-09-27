@@ -363,8 +363,8 @@ class ArtForgeDaily:
         if not title:
             title = f"东方艺术 · {datetime.now().strftime('%Y-%m-%d')}"
         curator = ImageCurator({
-            "generate_html": True, "generate_docx": False,
-            "generate_pdf": False, "generate_clipboard": True,
+            "generate_html": True, "generate_docx": True,
+            "generate_pdf": True, "generate_clipboard": True,
         })
         r = curator.curate(str(image_dir), title=title)
         if r.get("status") != "success":
@@ -511,10 +511,17 @@ class ArtForgeDaily:
 
         # 2) 智能选择预设
         if use_smart and not presets:
-            presets = smart_pick_presets(category, count=count)
-            if not presets:
-                return {"status": "error", "error": f"分类 {category} 下没有可用预设"}
-            logger.info(f"🎲 智能选中预设: {presets}")
+            all_presets = list_presets(category)
+            if not all_presets:
+                return {"status": "error", "error": f"分类 {category} 下没有预设"}
+            
+            # 随机挑选 count 个预设（如果分类下预设不足，则全选）
+            num_to_pick = min(count, len(all_presets))
+            presets = random.sample(all_presets, num_to_pick)
+            
+            # 既然每个预设只生成 1 张，就把 count 设为 1
+            count = 1
+            logger.info(f"🎲 智能选中 {len(presets)} 个预设，每个生成 1 张: {presets}")
         elif not presets:
             presets = pick_default_presets(category, count=count)
             if not presets:
@@ -556,12 +563,17 @@ class ArtForgeDaily:
                 return {"status": "error", "error": "鉴赏失败", "result": result}
             result["md_path"] = str(md)
             
-            # 🌟 2.5 智能生成标题
+            # 2.5 🌟 智能生成标题
             smart_title = self._generate_smart_title(md, category, presets)
             if smart_title:
-                # 更新 metadata 和文章
-                self._update_article_title(md, smart_title)
+                # ✅ 关键：更新路径！
+                md = self._update_article_title(md, smart_title)
+                result["md_path"] = str(md)  # 同步更新 result 里的路径
                 logger.info(f"🎯 智能标题: {smart_title}")
+                effective_title = smart_title
+            else:
+                effective_title = f"{category.replace('_', ' ').title()} · {datetime.now().strftime('%Y-%m-%d')}"
+            
 
             # 3. 排版
             art_dir = self.format(md, theme, footer_image=footer_image)
@@ -724,9 +736,11 @@ class ArtForgeDaily:
                     article_dir.rename(new_path)
                     # 更新 result 里的路径
                     logger.info(f"📁 目录已重命名: {old_name} → {new_name}")
+                    return new_path / "article.md"  # ✅ 返回新路径
                     
         except Exception as e:
             logger.warning(f"⚠️ 更新标题失败: {e}")
+        return md_path  # ✅ 兜底返回原路径            
             
 # ============================================================
 # CLI
