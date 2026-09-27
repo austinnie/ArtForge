@@ -1,7 +1,7 @@
 // server/static/sw.js
 // 简单缓存：静态资源走缓存优先，API 永远走网络
 
-const CACHE_NAME = 'artforge-v3';
+const CACHE_NAME = 'artforge-v12';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

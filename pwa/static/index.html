@@ -7,7 +7,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ArtForge">
 <link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <title>ArtForge · 东方艺术</title>
 <style>
   :root {
@@ -456,6 +458,17 @@
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
+
+
+// ============================================================
+// 移动端隐藏配置 Tab（避免误截图泄露）
+// ============================================================
+if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+  document.addEventListener('DOMContentLoaded', () => {
+    const cfgBtn = document.querySelector('.tab-btn[data-tab="config"]');
+    if (cfgBtn) cfgBtn.style.display = 'none';
+  });
+}
 
 // ============================================================
 // 认证

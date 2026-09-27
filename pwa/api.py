@@ -983,9 +983,8 @@ def get_config():
     """
     读取 .env（严格脱敏）
     - 敏感字段（KEY/SECRET/TOKEN/PASSWORD）：只显示 "已配置" / "未配置"
-    - URL 字段：如果包含 token 也隐藏
+    - URL 里带 token/key 参数：隐藏
     - 其他字段正常显示
-    - 隐藏的 KEY 用户无法通过 API 获取原值
     """
     SENSITIVE_KEYWORDS = (
         "KEY", "SECRET", "TOKEN", "PASSWORD", "PASSWD",
@@ -1003,7 +1002,7 @@ def get_config():
             k = k.strip()
             v = v.strip()
 
-            # 去掉可能的引号
+            # 去掉引号
             if (v.startswith('"') and v.endswith('"')) or \
                (v.startswith("'") and v.endswith("'")):
                 v = v[1:-1]
@@ -1013,19 +1012,18 @@ def get_config():
             # 敏感字段：只显示状态
             if any(kw in key_upper for kw in SENSITIVE_KEYWORDS):
                 if v:
-                    # 只显示长度信息，不泄露任何字符
                     cfg[k] = f"***已配置（{len(v)} 字符）***"
                 else:
                     cfg[k] = "（未配置）"
                 continue
 
-            # URL 里带敏感参数？简单检查
+            # URL 带敏感参数
             if "URL" in key_upper and v:
                 if any(kw in v.lower() for kw in ("token=", "key=", "secret=", "apikey=")):
                     cfg[k] = "***包含敏感参数的 URL 已隐藏***"
                     continue
 
-            # 其他字段：如果值本身很长的十六进制/随机字符串，也隐藏
+            # 疑似密钥（长十六进制/随机串）
             if v and len(v) >= 24 and all(
                 c in "0123456789abcdefABCDEF-_" for c in v
             ):
@@ -1034,7 +1032,7 @@ def get_config():
 
             cfg[k] = v
 
-    # 按 key 排序，但敏感字段统一放最后
+    # 排序：敏感字段放最后
     def sort_key(kv):
         k = kv[0].upper()
         is_sensitive = any(kw in k for kw in SENSITIVE_KEYWORDS)

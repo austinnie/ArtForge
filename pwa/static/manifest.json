@@ -9,7 +9,12 @@
   "background_color": "#fafaf7",
   "theme_color": "#c25b3b",
   "lang": "zh-CN",
-  "icons": [
+"icons": [
+    {
+      "src": "/icon-32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
@@ -22,5 +27,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+]
 }
