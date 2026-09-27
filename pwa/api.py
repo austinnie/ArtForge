@@ -1348,8 +1348,21 @@ async def _run_batch(tid: str, req: BatchRequest):
                     })
 
                 except Exception as e:
+                    err_msg = str(e)
+                    # 简化常见错误
+                    if "402" in err_msg or "Insufficient balance" in err_msg:
+                        err_msg = "余额不足"
+                    elif "401" in err_msg or "Unauthorized" in err_msg:
+                        err_msg = "API Key 无效"
+                    elif "429" in err_msg or "rate limit" in err_msg.lower():
+                        err_msg = "限流"
+                    elif "timeout" in err_msg.lower():
+                        err_msg = "超时"
+                    else:
+                        err_msg = err_msg[:60]
+
                     logger.warning(f"[{tid[:8]}] {preset} #{i+1} 失败: {e}")
-                    errors.append(f"{preset} #{i+1}: {str(e)[:80]}")
+                    errors.append(f"{preset} #{i+1}: {err_msg}")
 
                 done += 1
                 t["done"] = done
