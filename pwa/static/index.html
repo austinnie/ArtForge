@@ -216,6 +216,38 @@
     width: 100%; aspect-ratio: 1; object-fit: cover;
     border-radius: 8px; cursor: pointer;
   }
+  
+/* 批量模式 */
+.batch-preset-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px;
+  cursor: pointer; font-size: 14px;
+  transition: background .1s;
+  user-select: none;
+}
+.batch-preset-item:active { background: #f5f0eb; }
+.batch-preset-item input[type="checkbox"] {
+  width: 18px; height: 18px; accent-color: var(--accent);
+}
+.batch-preset-list {
+  max-height: 280px; overflow-y: auto;
+  border: 1px solid #e0e0e0; border-radius: 10px;
+  padding: 6px; background: #fff;
+}
+.batch-preset-actions {
+  display: flex; gap: 8px; margin-top: 8px;
+}
+.batch-preset-actions button {
+  flex: 1; padding: 8px; font-size: 13px;
+  border: 1px solid #ddd; border-radius: 8px;
+  background: #fff; cursor: pointer; font-family: inherit;
+}
+.batch-preset-actions button:active { background: #f5f5f5; }
+.batch-preset-count {
+  font-size: 12px; color: #888; margin-top: 6px;
+  text-align: right;
+}
+  
 </style>
 </head>
 <body>
@@ -270,6 +302,12 @@
 
 <!-- ============ 页 1：生图 ============ -->
 <div class="page active" id="page-generate">
+
+  <div class="switch-row" style="border-bottom: 2px solid var(--accent); padding-bottom: 14px; margin-bottom: 4px;">
+    <span><b>⚡ 批量模式</b>（多选预设）</span>
+    <div class="switch"><input type="checkbox" id="batchMode"><label for="batchMode"></label></div>
+  </div>
+
   <div class="switch-row">
     <span>使用自定义 Prompt</span>
     <div class="switch"><input type="checkbox" id="useCustom"><label for="useCustom"></label></div>
@@ -284,6 +322,30 @@
       <textarea id="customPrompt" placeholder="a young tengu warrior..."></textarea>
     </div>
   </div>
+
+  <!-- 批量模式专属 -->
+  <div id="batchPresetMode" style="display:none;">
+    <div class="field">
+      <label>主题分类</label>
+      <select id="batchCategory"></select>
+    </div>
+    <div class="field">
+      <label>选择预设（可多选）</label>
+      <div class="batch-preset-list" id="batchPresetList"></div>
+      <div class="batch-preset-actions">
+        <button type="button" onclick="selectAllPresets()">✅ 全选</button>
+        <button type="button" onclick="clearAllPresets()">🗑️ 清空</button>
+      </div>
+      <div class="batch-preset-count">
+        已选 <b id="batchSelectedCount">0</b> 个
+      </div>
+    </div>
+    <div class="field">
+      <label>每个预设生成张数</label>
+      <input type="number" id="batchCount" value="1" min="1" max="5">
+    </div>
+  </div>
+  
   <div class="field"><label>引擎</label>
     <select id="engine">
       <option value="pollinations">Pollinations（免费）</option>
@@ -644,13 +706,20 @@ async function loadPresets() {
     const r = await authFetch('/api/presets');
     const data = await r.json();
     const cats = Object.keys(data);
+
     $('#category').innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
-    // 顺便填充流水线页
     $('#pipeCat').innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+
+    // 批量模式的分类下拉
+    $('#batchCategory').innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+
     updatePresets(data);
     updatePipePresets(data);
+    updateBatchPresetList();
+
     $('#category').onchange = () => updatePresets(data);
     $('#pipeCat').onchange = () => updatePipePresets(data);
+
     window._presetsData = data;
   } catch (e) {
     if (e.__auth_failed) return;
@@ -677,9 +746,79 @@ $('#useCustom').onchange = (e) => {
   $('#customMode').style.display = on ? '' : 'none';
 };
 
+// ============================================================
+// 批量模式
+// ============================================================
+
+function updateBatchPresetList() {
+  const cat = $('#batchCategory').value;
+  const data = window._presetsData || {};
+  const list = data[cat] || [];
+
+  $('#batchPresetList').innerHTML = list.map(p => `
+    <label class="batch-preset-item">
+      <input type="checkbox" class="batch-preset-cb" value="${p}">
+      <span>${p}</span>
+    </label>
+  `).join('');
+
+  $$('.batch-preset-cb').forEach(cb => {
+    cb.addEventListener('change', updateBatchCount);
+  });
+  updateBatchCount();
+}
+
+function updateBatchCount() {
+  const n = $$('.batch-preset-cb:checked').length;
+  $('#batchSelectedCount').textContent = n;
+}
+
+function selectAllPresets() {
+  $$('.batch-preset-cb').forEach(cb => { cb.checked = true; });
+  updateBatchCount();
+}
+
+function clearAllPresets() {
+  $$('.batch-preset-cb').forEach(cb => { cb.checked = false; });
+  updateBatchCount();
+}
+
+// 批量模式开关
+$('#batchMode').onchange = (e) => {
+  const on = e.target.checked;
+
+  // 关掉自定义 prompt
+  $('#useCustom').checked = false;
+  $('#customMode').style.display = 'none';
+
+  $('#presetMode').style.display = on ? 'none' : '';
+  $('#batchPresetMode').style.display = on ? '' : 'none';
+
+  // 更新按钮文案
+  const btn = $('#genBtn');
+  if (on) {
+    btn.textContent = '⚡ 开始批量生成';
+    if (!$('#batchCategory').value) {
+      const cats = Object.keys(window._presetsData || {});
+      $('#batchCategory').innerHTML = cats
+        .map(c => `<option value="${c}">${c}</option>`).join('');
+      updateBatchPresetList();
+    }
+  } else {
+    btn.textContent = '开始创作';
+  }
+};
+
+$('#batchCategory').onchange = updateBatchPresetList;
+
 $('#genBtn').onclick = async () => {
-  $('#genBtn').disabled = true;
-  $('#genBtn').textContent = '生成中…';
+  // 批量模式分发
+  if ($('#batchMode').checked) {
+    return submitBatch();
+  }
+
+  // 以下为原来的单张逻辑
+  if (currentTaskId) return;
   hideError('genError');
   $('#genPreview').innerHTML = '';
   setProgress('genBar', 'genMsg', 0, '提交…');
@@ -1089,6 +1228,138 @@ $('#loginBtn').onclick = async () => {
 $('#loginPass').addEventListener('keydown', e => {
   if (e.key === 'Enter') $('#loginBtn').click();
 });
+
+
+// ============================================================
+// 批量生成
+// ============================================================
+
+async function submitBatch() {
+  const selected = Array.from($$('.batch-preset-cb:checked')).map(cb => cb.value);
+
+  if (!selected.length) {
+    alert('请至少选择一个预设');
+    return;
+  }
+  if (selected.length > 20) {
+    alert('一次最多 20 个预设');
+    return;
+  }
+
+  const count = parseInt($('#batchCount').value) || 1;
+
+  $('#genBtn').disabled = true;
+  $('#genBtn').textContent = '批量生成中…';
+  $('#status').textContent = '批量生成中…';
+  hideError('genError');
+  $('#genPreview').innerHTML = '';
+  setProgress('genBar', 'genMsg', 0, `提交 ${selected.length * count} 张…`);
+
+  const body = {
+    presets: selected,
+    category: $('#batchCategory').value,
+    count_per_preset: count,
+    engine: $('#engine').value,
+    composition: $('#composition').value,
+    seal_scheme: $('#sealScheme').value,
+    use_scroll: $('#use_scroll').checked,
+    use_aging: $('#use_aging').checked,
+    use_inscription: $('#use_inscription').checked,
+    use_seal: $('#use_seal').checked,
+    use_watermark: $('#use_watermark').checked,
+  };
+
+  try {
+    const r = await authFetch('/api/batch', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const {task_id} = await r.json();
+    pollBatchTask(task_id);
+  } catch (e) {
+    if (!e.__auth_failed) showError('genError', e.message);
+    resetBatchBtn();
+  }
+}
+
+function pollBatchTask(taskId) {
+  let lastP = 0;
+  const timer = setInterval(async () => {
+    try {
+      const r = await authFetch(`/api/batch/task/${taskId}`);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const s = await r.json();
+
+      if (s.progress > lastP) {
+        lastP = s.progress;
+        setProgress('genBar', 'genMsg', s.progress,
+                    `${s.message} [${s.done}/${s.total}]`);
+      } else {
+        $('#genMsg').textContent = `${s.message} [${s.done}/${s.total}]`;
+      }
+
+      if (s.status === 'done') {
+        clearInterval(timer);
+        showBatchResult(taskId, s.result);
+        resetBatchBtn();
+      } else if (s.status === 'error') {
+        clearInterval(timer);
+        showError('genError', s.error || '未知错误');
+        resetBatchBtn();
+      }
+    } catch (e) {
+      if (e.__auth_failed) { clearInterval(timer); return; }
+    }
+  }, 1500);
+}
+
+function resetBatchBtn() {
+  $('#genBtn').disabled = false;
+  $('#genBtn').textContent = $('#batchMode').checked
+    ? '⚡ 开始批量生成'
+    : '开始创作';
+}
+
+function showBatchResult(taskId, res) {
+  setStatus(`完成 ${res.count}/${res.total}`);
+  resetBatchBtn();
+
+  const grid = res.images.map((it, i) => `
+    <div style="position:relative;">
+      <img src="/api/batch/image/${taskId}/${i}"
+           alt="${escapeHtml(it.preset)}"
+           loading="lazy"
+           style="width:100%;aspect-ratio:1;object-fit:cover;
+                  border-radius:8px;cursor:pointer;"
+           onclick="window.open('/api/batch/image/${taskId}/${i}','_blank')">
+      <div style="position:absolute;bottom:4px;left:4px;right:4px;
+                  font-size:10px;color:#fff;background:rgba(0,0,0,.5);
+                  padding:2px 4px;border-radius:4px;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        ${escapeHtml(it.preset)} #${it.index + 1}
+      </div>
+    </div>
+  `).join('');
+
+  let errs = '';
+  if (res.errors && res.errors.length) {
+    errs = `<div style="color:#c0392b;font-size:12px;margin-top:8px;">
+      失败 ${res.errors.length} 张：${res.errors.slice(0,3).map(escapeHtml).join(' | ')}
+    </div>`;
+  }
+
+  $('#genPreview').innerHTML = `
+    <div class="card">
+      <div><b>生成</b>：${res.count} / ${res.total} 张</div>
+      <div><b>目录</b>：${escapeHtml(res.output_dir)}</div>
+      ${errs}
+    </div>
+    <div class="img-grid">${grid}</div>
+  `;
+  $('#genPreview').scrollIntoView({behavior: 'smooth'});
+}
 
 // 启动
 (async function init() {

@@ -94,6 +94,9 @@ if _PWA_USER and _PWA_PASS:
                 or path.startswith("/api/format/download/")
                 or path.startswith("/api/pipeline/download/")
                 or path.startswith("/api/ukiyoe/image/")
+                or path.startswith("/api/batch/image/")
+                or path.startswith("/api/gallery/file/")
+                or path.startswith("/api/gallery/download/")
                 or not path.startswith("/api/")):
             return await call_next(request)
 
@@ -140,6 +143,7 @@ CURATE_TASKS: dict = {}
 FORMAT_TASKS: dict = {}
 PIPELINE_TASKS: dict = {}
 UKIYOE_TASKS: dict = {}
+BATCH_TASKS: dict = {}
 _GALLERY_CACHE: list = []
 
 def _new_task(store: dict, kind: str = "") -> str:
@@ -1130,6 +1134,316 @@ def gallery_file(idx: int):
 @app.get("/api/gallery/download/{idx}")
 def gallery_download(idx: int):
     """下载（和 file 一样，只是 filename 明确）"""
+    return gallery_file(idx)
+
+
+
+# ============================================================
+# ---------- 批量生成 ----------
+# ============================================================
+
+class BatchRequest(BaseModel):
+    presets: List[str]
+    category: str = "yokai"
+    count_per_preset: int = 1
+    engine: str = "pollinations"
+    composition: str = "vertical"
+    seed: Optional[int] = None
+    use_scroll: bool = True
+    use_aging: bool = True
+    use_inscription: bool = True
+    use_seal: bool = True
+    use_watermark: bool = True
+    seal_scheme: str = "contrast"
+    language: str = "auto"
+
+
+@app.post("/api/batch")
+async def batch_generate(req: BatchRequest):
+    if not req.presets:
+        raise HTTPException(400, "presets 不能为空")
+    if req.count_per_preset < 1 or req.count_per_preset > 5:
+        raise HTTPException(400, "count_per_preset 必须在 1-5 之间")
+    if len(req.presets) > 20:
+        raise HTTPException(400, "一次最多 20 个预设")
+
+    tid = _new_task(BATCH_TASKS, "batch")
+    BATCH_TASKS[tid]["total"] = len(req.presets) * req.count_per_preset
+    BATCH_TASKS[tid]["done"] = 0
+    asyncio.create_task(_run_batch(tid, req))
+    return {"task_id": tid}
+
+
+@app.get("/api/batch/task/{task_id}")
+def batch_status(task_id: str):
+    if task_id not in BATCH_TASKS:
+        raise HTTPException(404, "task not found")
+    t = BATCH_TASKS[task_id]
+    return {
+        "status": t["status"],
+        "progress": t["progress"],
+        "message": t["message"],
+        "error": t.get("error"),
+        "result": t["result"],
+        "total": t.get("total", 0),
+        "done": t.get("done", 0),
+    }
+
+
+@app.get("/api/batch/image/{task_id}/{idx}")
+def batch_image(task_id: str, idx: int):
+    t = BATCH_TASKS.get(task_id)
+    if not t or t["status"] != "done":
+        raise HTTPException(404, "not ready")
+    images = t["result"]["images"]
+    if idx < 0 or idx >= len(images):
+        raise HTTPException(404, "index out of range")
+    return FileResponse(images[idx]["path"], media_type="image/png")
+
+
+async def _run_batch(tid: str, req: BatchRequest):
+    t = BATCH_TASKS[tid]
+
+    def P(p, msg=""):
+        t["progress"] = p
+        if msg: t["message"] = msg
+
+    try:
+        from core.prompt_builder import PromptBuilder
+        from api_engines import create_engine
+        from compose_artwork import (
+            InscriptionRenderer, pick_size, theme_from_preset,
+            load_config, ARTIST_NAME,
+        )
+
+        t["status"] = "running"
+        total = t["total"]
+        P(1, f"准备中…（共 {total} 张）")
+
+        builder = PromptBuilder()
+        engine = create_engine(req.engine, load_config())
+        loop = asyncio.get_event_loop()
+
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        out_dir = PROJECT_ROOT / "output" / req.category / f"batch_{ts}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+
+        produced = []
+        done = 0
+        errors = []
+
+        for preset in req.presets:
+            for i in range(req.count_per_preset):
+                try:
+                    progress = int(5 + done * 90 / total)
+                    P(progress, f"{preset} ({done+1}/{total})")
+
+                    prompt, detail = builder.compose_preset(
+                        preset, category=req.category, return_detail=True)
+                    theme = theme_from_preset(preset, req.category)
+
+                    comp_map = {
+                        "vertical": "vertical hanging scroll, kakemono",
+                        "horizontal": "horizontal handscroll, emaki",
+                        "byobu": "folding screen, byobu, multi-panel",
+                        "fan": "round fan, circular composition",
+                        "album": "square album leaf",
+                    }
+                    detail["composition"] = comp_map.get(
+                        req.composition, comp_map["vertical"])
+                    detail.pop("inscription", None)
+                    full_prompt = ", ".join(
+                        detail[k] for k in builder.LAYER_ORDER if detail.get(k))
+
+                    negative = builder.get_negative() + (
+                        ", calligraphy, text, chinese characters, japanese text, "
+                        "kanji, kana, seal, stamp, signature, inscription, "
+                        "poem text, red seal, watermark, logo, letters, words")
+
+                    width, height = pick_size(detail)
+
+                    image = await loop.run_in_executor(None, lambda:
+                        engine.generate_single(
+                            prompt=full_prompt, negative=negative,
+                            width=width, height=height, seed=req.seed))
+
+                    if image.mode != "RGBA":
+                        image = image.convert("RGBA")
+
+                    if req.use_aging:
+                        try:
+                            from services.aging_processor import AgingProcessor
+                            image = await loop.run_in_executor(None, lambda:
+                                AgingProcessor(seed=req.seed).apply(
+                                    image.convert("RGB"),
+                                    texture="xuan_paper",
+                                    strength=0.55).convert("RGBA"))
+                        except Exception:
+                            pass
+
+                    if req.use_inscription:
+                        try:
+                            from services.inscription_generator import InscriptionGenerator
+                            def _gen():
+                                ig = InscriptionGenerator(seed=req.seed)
+                                lang = None if req.language == "auto" else req.language
+                                text, _ = ig.generate(
+                                    theme=theme, format="auto", return_meta=True,
+                                    backend=req.engine
+                                    if req.engine in ("agnes", "pollinations")
+                                    else "auto",
+                                    category=req.category, language=lang)
+                                return text
+                            inscription_text = await loop.run_in_executor(None, _gen)
+                            renderer = InscriptionRenderer()
+                            fs = max(24, int(min(width, height) * 0.045))
+                            image = renderer.render(
+                                image, inscription_text, font_size=fs,
+                                color=(45, 40, 35), position="top_right",
+                                margin=int(min(width, height) * 0.055),
+                                max_chars_per_col=8)
+                        except Exception:
+                            pass
+
+                    if req.use_seal:
+                        try:
+                            from services.seal_generator import SealGenerator
+                            image = SealGenerator().apply_scheme(
+                                image, ARTIST_NAME, scheme=req.seal_scheme,
+                                margin_ratio=0.05)
+                        except Exception:
+                            pass
+
+                    if req.use_scroll:
+                        try:
+                            from services.scroll_composer import ScrollComposer
+                            image = await loop.run_in_executor(None, lambda:
+                                ScrollComposer(seed=req.seed).compose(
+                                    image.convert("RGB"),
+                                    composition=req.composition).convert("RGBA"))
+                        except Exception:
+                            pass
+
+                    if req.use_watermark:
+                        try:
+                            from services.watermark import WatermarkProcessor
+                            image = WatermarkProcessor(seed=req.seed).add_subtle_watermark(
+                                image, text=ARTIST_NAME, opacity=30,
+                                font_size=40, angle=-30,
+                                spacing_x=180, spacing_y=180)
+                            if image.mode != "RGBA":
+                                image = image.convert("RGBA")
+                        except Exception:
+                            pass
+
+                    name = f"{preset}_{i+1:02d}"
+                    out_path = out_dir / f"{name}.png"
+                    image.convert("RGB").save(out_path, quality=95)
+
+                    produced.append({
+                        "path": str(out_path),
+                        "preset": preset,
+                        "index": i,
+                        "theme": theme,
+                    })
+
+                except Exception as e:
+                    logger.warning(f"[{tid[:8]}] {preset} #{i+1} 失败: {e}")
+                    errors.append(f"{preset} #{i+1}: {str(e)[:80]}")
+
+                done += 1
+                t["done"] = done
+
+        t["result"] = {
+            "output_dir": str(out_dir),
+            "category": req.category,
+            "images": produced,
+            "count": len(produced),
+            "total": total,
+            "errors": errors,
+        }
+        t["status"] = "done"
+        P(100, f"完成 {len(produced)}/{total}")
+        logger.info(f"[{tid[:8]}] 批量生成完成: {len(produced)}/{total}")
+
+    except Exception as e:
+        tb = traceback.format_exc()
+        logger.error(f"[{tid[:8]}] 批量失败: {e}\n{tb}")
+        t["status"] = "error"
+        t["error"] = str(e)
+        t["traceback"] = tb
+
+
+# ============================================================
+# ---------- 作品库 ----------
+# ============================================================
+
+@app.get("/api/gallery")
+def gallery_list(category: str = "", limit: int = 200):
+    out = PROJECT_ROOT / "output"
+    if not out.exists():
+        return {"items": [], "total": 0, "categories": []}
+
+    exts = {".png", ".jpg", ".jpeg", ".webp"}
+    items = []
+    categories_set = set()
+
+    for cat_dir in sorted(out.iterdir()):
+        if not cat_dir.is_dir():
+            continue
+        cat_name = cat_dir.name
+        if cat_name in ("articles", "wechat", "daily", "tmp", "seals", "videos"):
+            continue
+
+        for p in cat_dir.rglob("*"):
+            if not p.is_file():
+                continue
+            if p.suffix.lower() not in exts:
+                continue
+            if category and cat_name != category:
+                continue
+
+            categories_set.add(cat_name)
+            stat = p.stat()
+            rel = p.relative_to(PROJECT_ROOT / "output")
+
+            items.append({
+                "name": p.name,
+                "category": cat_name,
+                "rel": str(rel).replace("\\", "/"),
+                "size": stat.st_size,
+                "mtime": stat.st_mtime,
+                "created": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M"),
+            })
+
+    items.sort(key=lambda x: x["mtime"], reverse=True)
+    items = items[:limit]
+
+    global _GALLERY_CACHE
+    _GALLERY_CACHE = items
+    for i, it in enumerate(items):
+        it["id"] = i
+
+    return {
+        "items": items,
+        "total": len(items),
+        "categories": sorted(categories_set),
+    }
+
+
+@app.get("/api/gallery/file/{idx}")
+def gallery_file(idx: int):
+    if idx < 0 or idx >= len(_GALLERY_CACHE):
+        raise HTTPException(404, "index out of range")
+    it = _GALLERY_CACHE[idx]
+    path = PROJECT_ROOT / "output" / it["rel"]
+    if not path.exists():
+        raise HTTPException(404, "file missing")
+    return FileResponse(path, media_type="image/png", filename=it["name"])
+
+
+@app.get("/api/gallery/download/{idx}")
+def gallery_download(idx: int):
     return gallery_file(idx)
     
 # ============================================================
