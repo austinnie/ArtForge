@@ -140,7 +140,7 @@ CURATE_TASKS: dict = {}
 FORMAT_TASKS: dict = {}
 PIPELINE_TASKS: dict = {}
 UKIYOE_TASKS: dict = {}
-
+_GALLERY_CACHE: list = []
 
 def _new_task(store: dict, kind: str = "") -> str:
     tid = uuid.uuid4().hex
@@ -1042,6 +1042,96 @@ def get_config():
     return {"config": sorted_cfg}
 
 
+# ============================================================
+# ---------- 作品库（历史记录） ----------
+# ============================================================
+
+@app.get("/api/gallery")
+def gallery_list(category: str = "", limit: int = 200):
+    """
+    列出 output/ 下所有图片
+    参数：
+      category: 筛选分类（如 yokai / cat / flower），空 = 全部
+      limit: 最多返回几张
+    """
+    out = PROJECT_ROOT / "output"
+    if not out.exists():
+        return {"items": [], "total": 0, "categories": []}
+
+    exts = {".png", ".jpg", ".jpeg", ".webp"}
+    items = []
+    categories_set = set()
+
+    # 遍历 output/*/ 和 output/*/*/
+    for cat_dir in sorted(out.iterdir()):
+        if not cat_dir.is_dir():
+            continue
+        cat_name = cat_dir.name
+
+        # 跳过 articles / wechat / daily / tmp 等非作品目录
+        if cat_name in ("articles", "wechat", "daily", "tmp", "seals", "videos"):
+            continue
+
+        # 只扫一层（不过度递归）
+        for p in cat_dir.iterdir():
+            if not p.is_file():
+                continue
+            if p.suffix.lower() not in exts:
+                continue
+
+            if category and cat_name != category:
+                continue
+
+            categories_set.add(cat_name)
+            stat = p.stat()
+            items.append({
+                "name": p.name,
+                "category": cat_name,
+                "size": stat.st_size,
+                "mtime": stat.st_mtime,
+                "created": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M"),
+            })
+
+    # 按修改时间倒序
+    items.sort(key=lambda x: x["mtime"], reverse=True)
+    items = items[:limit]
+
+    # 加索引（用于 /api/gallery/file）
+    for i, it in enumerate(items):
+        it["id"] = i
+
+    # 全局缓存（简单粗暴，用列表存一下）
+    global _GALLERY_CACHE
+    _GALLERY_CACHE = items
+
+    return {
+        "items": items,
+        "total": len(items),
+        "categories": sorted(categories_set),
+    }
+
+
+# 全局缓存（用于 /api/gallery/file?idx=N）
+_GALLERY_CACHE: list = []
+
+
+@app.get("/api/gallery/file/{idx}")
+def gallery_file(idx: int):
+    """按索引返回图片（索引来自 /api/gallery 返回的 items[].id）"""
+    if idx < 0 or idx >= len(_GALLERY_CACHE):
+        raise HTTPException(404, "index out of range")
+    it = _GALLERY_CACHE[idx]
+    path = PROJECT_ROOT / "output" / it["category"] / it["name"]
+    if not path.exists():
+        raise HTTPException(404, "file missing")
+    return FileResponse(path, media_type="image/png", filename=it["name"])
+
+
+@app.get("/api/gallery/download/{idx}")
+def gallery_download(idx: int):
+    """下载（和 file 一样，只是 filename 明确）"""
+    return gallery_file(idx)
+    
 # ============================================================
 # 静态文件（放最后！）
 # ============================================================

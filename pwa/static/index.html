@@ -261,6 +261,7 @@
     <button class="tab-btn" data-tab="format">📝 排版</button>
     <button class="tab-btn" data-tab="pipeline">⚡ 流水线</button>
     <button class="tab-btn" data-tab="ukiyoe">🌊 浮世绘</button>
+	<button class="tab-btn" data-tab="gallery">📚 作品</button>
     <button class="tab-btn" data-tab="config">⚙️ 配置</button>
   </div>
 </div>
@@ -442,7 +443,32 @@
   <div id="ukResult"></div>
 </div>
 
-<!-- ============ 页 6：配置 ============ -->
+<!-- ============ 页 6：作品库 ============ -->
+<div class="page" id="page-gallery">
+  <div class="field">
+    <label>分类筛选</label>
+    <select id="galCategory">
+      <option value="">全部</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>最多显示</label>
+    <select id="galLimit">
+      <option value="50">50 张</option>
+      <option value="100" selected>100 张</option>
+      <option value="200">200 张</option>
+      <option value="500">500 张</option>
+    </select>
+  </div>
+  <button class="btn btn-secondary" id="galRefresh" style="margin-top:0;">🔄 刷新列表</button>
+  <div id="galInfo" class="card" style="display:none;"></div>
+  <div id="galGrid" class="img-grid"></div>
+  <div id="galEmpty" style="display:none;text-align:center;color:#999;padding:40px 0;">
+    暂无作品
+  </div>
+</div>
+
+<!-- ============ 页 7：配置 ============ -->
 <div class="page" id="page-config">
   <button class="btn btn-secondary" onclick="loadConfig()">🔄 刷新配置</button>
   <div class="card" id="configBox" style="margin-top:16px;">
@@ -548,6 +574,7 @@ $$('.tab-btn').forEach(btn => {
     if (tab === 'curate') loadCurateDirs();
     if (tab === 'ukiyoe') loadUkiyoeDirs();
     if (tab === 'config') loadConfig();
+    if (tab === 'gallery') loadGallery();
   };
 });
 
@@ -1074,6 +1101,124 @@ $('#loginPass').addEventListener('keydown', e => {
     else showLogin();
   } catch { showLogin(); }
 })();
+
+
+// ============================================================
+// 作品库
+// ============================================================
+
+let galItems = [];
+
+async function loadGallery() {
+  const cat = $('#galCategory').value;
+  const limit = parseInt($('#galLimit').value) || 100;
+
+  $('#galGrid').innerHTML = '';
+  $('#galEmpty').style.display = 'none';
+  $('#galInfo').style.display = 'block';
+  $('#galInfo').innerHTML = '加载中…';
+
+  try {
+    const url = `/api/gallery?limit=${limit}${cat ? '&category=' + encodeURIComponent(cat) : ''}`;
+    const r = await authFetch(url);
+    const data = await r.json();
+
+    // 更新分类下拉框
+    const curCat = $('#galCategory').value;
+    $('#galCategory').innerHTML = '<option value="">全部</option>' +
+      data.categories.map(c => `<option value="${c}"${c === curCat ? ' selected' : ''}>${c}</option>`).join('');
+
+    galItems = data.items;
+
+    if (!galItems.length) {
+      $('#galInfo').innerHTML = '暂无作品';
+      $('#galEmpty').style.display = 'block';
+      return;
+    }
+
+    $('#galInfo').innerHTML = `<b>共 ${data.total} 张作品</b>`;
+
+    // 渲染网格
+    $('#galGrid').innerHTML = galItems.map((it, i) => `
+      <div style="position:relative;">
+        <img src="/api/gallery/file/${it.id}?t=${it.mtime}"
+             alt="${escapeHtml(it.name)}"
+             loading="lazy"
+             onclick="showGalleryItem(${it.id})"
+             style="cursor:pointer;">
+        <div style="position:absolute;bottom:4px;left:4px;right:4px;
+                    font-size:10px;color:#fff;background:rgba(0,0,0,.5);
+                    padding:2px 4px;border-radius:4px;
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${escapeHtml(it.name.substring(0, 20))}
+        </div>
+      </div>
+    `).join('');
+
+  } catch (e) {
+    if (e.__auth_failed) return;
+    $('#galInfo').innerHTML = '加载失败: ' + escapeHtml(e.message);
+  }
+}
+
+// 点击缩略图 → 大图预览
+function showGalleryItem(id) {
+  const it = galItems[id];
+  if (!it) return;
+
+  const imgUrl = `/api/gallery/file/${id}?t=${it.mtime}`;
+  const dlUrl = `/api/gallery/download/${id}`;
+
+  // 弹出模态框
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.9);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    cursor:pointer;
+  `;
+  modal.innerHTML = `
+    <div style="max-width:100%;max-height:100%;display:flex;
+                flex-direction:column;gap:10px;cursor:default;"
+         onclick="event.stopPropagation()">
+      <img src="${imgUrl}" style="max-width:100%;max-height:70vh;
+           border-radius:8px;display:block;">
+      <div style="color:#fff;font-size:13px;text-align:center;">
+        <div><b>${escapeHtml(it.name)}</b></div>
+        <div style="opacity:.7;margin-top:4px;">
+          ${escapeHtml(it.category)} · ${(it.size/1024).toFixed(1)} KB · ${it.created}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center;">
+        <a href="${dlUrl}" download="${it.name}"
+           style="padding:10px 20px;background:#c25b3b;color:#fff;
+                  text-decoration:none;border-radius:8px;font-size:14px;">
+          📥 下载原图
+        </a>
+        <button onclick="this.closest('div').parentElement.parentElement.remove()"
+                style="padding:10px 20px;background:#666;color:#fff;
+                       border:none;border-radius:8px;font-size:14px;
+                       cursor:pointer;font-family:inherit;">
+          关闭
+        </button>
+      </div>
+    </div>
+  `;
+  modal.onclick = () => modal.remove();
+  document.body.appendChild(modal);
+}
+
+// 事件绑定
+$('#galRefresh').onclick = loadGallery;
+$('#galCategory').onchange = loadGallery;
+$('#galLimit').onchange = loadGallery;
+
+// Tab 切换时自动加载
+const origTabHandler = document.querySelector('.tab-btn[data-tab="gallery"]');
+if (origTabHandler) {
+  origTabHandler.addEventListener('click', () => {
+    setTimeout(loadGallery, 50);
+  });
+}
 
 // Service Worker
 if ('serviceWorker' in navigator) {
