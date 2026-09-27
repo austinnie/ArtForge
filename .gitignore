@@ -56,3 +56,6 @@ Thumbs.db
 *.spec 
 build/ 
 dist/ 
+
+pwa/cloudflared.exe
+skills/music_generator/soundfonts/fluidsynth-v2.6.0-win10-x64-cpp11/bin/fluidsynth.exe
