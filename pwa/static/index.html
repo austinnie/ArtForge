@@ -2,23 +2,17 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#c25b3b">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="ArtForge">
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <title>ArtForge · 东方艺术</title>
 <style>
   :root {
-    --bg: #fafaf7;
-    --fg: #2a2a2a;
-    --muted: #888;
-    --accent: #c25b3b;
-    --rule: #e8e4dc;
-    --card: #ffffff;
+    --bg: #fafaf7; --fg: #2a2a2a; --muted: #888;
+    --accent: #c25b3b; --rule: #e8e4dc; --card: #ffffff;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -26,54 +20,71 @@
     background: var(--bg); color: var(--fg);
     font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
     -webkit-font-smoothing: antialiased;
-    overscroll-behavior-y: contain;
   }
-  body {
-    padding-bottom: calc(20px + env(safe-area-inset-bottom));
-    min-height: 100vh;
-  }
+  body { padding-bottom: calc(80px + env(safe-area-inset-bottom)); min-height: 100vh; }
 
-  /* ---------- 顶栏 ---------- */
-  header {
-    position: sticky; top: 0; z-index: 10;
+  /* 顶栏 */
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
     background: rgba(255,255,255,.95);
     backdrop-filter: saturate(180%) blur(20px);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
     border-bottom: 1px solid var(--rule);
     padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  }
+  .topbar-row {
     display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
   }
-  header h1 {
-    font-size: 17px; margin: 0; letter-spacing: 2px;
-    font-weight: 700; color: var(--fg);
+  .topbar h1 {
+    font-size: 16px; margin: 0; letter-spacing: 1px; font-weight: 700;
   }
-  #status {
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+  .topbar-right button {
     font-size: 12px; color: var(--muted);
-    max-width: 45%; text-align: right;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    background: none; border: 1px solid var(--rule);
+    padding: 4px 10px; border-radius: 12px;
+    cursor: pointer; font-family: inherit;
   }
 
-  /* ---------- 主体 ---------- */
-  main {
-    max-width: 640px; margin: 0 auto;
-    padding: 16px;
+  /* Tab 导航 */
+  .tabs {
+    display: flex; gap: 4px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    font-size: 13px;
+    background: none;
+    border: 1px solid var(--rule);
+    border-radius: 20px;
+    color: var(--muted);
+    cursor: pointer; font-family: inherit;
+    transition: all .15s;
+  }
+  .tab-btn.active {
+    background: var(--accent); border-color: var(--accent); color: #fff;
   }
 
+  /* 页面容器 */
+  .page { display: none; }
+  .page.active { display: block; }
+  main { max-width: 640px; margin: 0 auto; padding: 16px; }
+
+  /* 表单 */
   .field { margin-bottom: 14px; }
   .field label {
     display: block; font-size: 13px; color: var(--muted);
     margin-bottom: 6px; font-weight: 500;
   }
-  .field select,
-  .field input[type="text"],
-  .field input[type="number"],
+  .field select, .field input[type="text"], .field input[type="number"],
   .field textarea {
-    width: 100%; padding: 12px 14px;
-    font-size: 16px;  /* 16px 防 iOS 自动缩放 */
+    width: 100%; padding: 12px 14px; font-size: 16px;
     border: 1px solid #e0e0e0; border-radius: 10px;
-    background: var(--card); color: var(--fg);
-    font-family: inherit; -webkit-appearance: none;
-    appearance: none;
+    background: var(--card); color: var(--fg); font-family: inherit;
+    -webkit-appearance: none; appearance: none;
   }
   .field select {
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
@@ -81,194 +92,133 @@
     background-position: right 14px center;
     padding-right: 36px;
   }
-  .field textarea {
-    resize: vertical; min-height: 80px; line-height: 1.5;
-  }
+  .field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 
-  /* ---------- 开关 ---------- */
+  /* 开关 */
   .switch-row {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 0; border-bottom: 1px solid #f2efe9;
+    padding: 10px 0; border-bottom: 1px solid #f2efe9;
   }
   .switch-row:last-of-type { border-bottom: none; }
-  .switch-row span { font-size: 15px; color: var(--fg); }
+  .switch-row span { font-size: 15px; }
   .switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
   .switch input { opacity: 0; width: 0; height: 0; }
   .switch label {
     position: absolute; inset: 0;
     background: #ddd; border-radius: 14px;
-    transition: background .2s; cursor: pointer; display: block;
+    transition: background .2s; cursor: pointer;
   }
   .switch label::before {
     content: ''; position: absolute;
     width: 22px; height: 22px; left: 3px; top: 3px;
-    background: #fff; border-radius: 50%;
-    transition: transform .2s;
+    background: #fff; border-radius: 50%; transition: transform .2s;
     box-shadow: 0 1px 3px rgba(0,0,0,.2);
   }
   .switch input:checked + label { background: var(--accent); }
   .switch input:checked + label::before { transform: translateX(20px); }
 
-  /* ---------- 按钮 ---------- */
+  /* 按钮 */
   .btn {
-    width: 100%; padding: 16px;
-    font-size: 17px; font-weight: 600; letter-spacing: 2px;
+    width: 100%; padding: 16px; font-size: 17px;
+    font-weight: 600; letter-spacing: 2px;
     background: var(--accent); color: #fff;
     border: none; border-radius: 12px;
-    margin-top: 20px; cursor: pointer;
-    transition: opacity .2s, transform .1s;
-    font-family: inherit;
+    margin-top: 20px; cursor: pointer; font-family: inherit;
   }
   .btn:active { transform: scale(.98); }
-  .btn:disabled { background: #ccc; cursor: not-allowed; }
-
-  /* ---------- 进度条 ---------- */
-  #progressWrap {
-    display: none; margin-top: 14px;
+  .btn:disabled { background: #ccc; }
+  .btn-secondary {
+    background: #fff; color: var(--fg); border: 1px solid #ddd;
+    margin-top: 8px;
   }
+
+  /* 进度 */
   .progress {
-    height: 4px; background: #eee; border-radius: 2px; overflow: hidden;
+    height: 4px; background: #eee; border-radius: 2px;
+    overflow: hidden; margin-top: 14px; display: none;
   }
   .progress-bar {
     height: 100%; width: 0; background: var(--accent);
     transition: width .4s ease;
   }
-  #progressMsg {
+  .progress-msg {
     font-size: 12px; color: var(--muted);
     text-align: center; margin-top: 6px;
   }
 
-  /* ---------- 结果 ---------- */
-  #preview { margin-top: 20px; }
-  #preview img {
-    width: 100%; border-radius: 10px; display: block;
-    box-shadow: 0 4px 24px rgba(0,0,0,.1);
-    background: #f0ede6;
-  }
-  .meta {
+  /* 卡片 */
+  .card {
     margin-top: 14px; padding: 14px;
     background: var(--card); border-radius: 10px;
     font-size: 13px; line-height: 1.7; color: #555;
     border: 1px solid var(--rule);
   }
-  .meta b { color: var(--fg); }
-  .actions {
-    display: flex; gap: 10px; margin-top: 12px;
+  .card b { color: var(--fg); }
+
+  /* 结果图 */
+  .result-img {
+    width: 100%; border-radius: 10px; display: block;
+    box-shadow: 0 4px 24px rgba(0,0,0,.1);
+    background: #f0ede6; margin-top: 14px;
   }
-  .actions a, .actions button {
-    flex: 1; padding: 12px;
+
+  /* 下载按钮组 */
+  .download-group {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+  }
+  .download-group a, .download-group button {
+    flex: 1; min-width: 90px; padding: 12px;
     text-align: center; text-decoration: none;
     background: var(--card); color: var(--fg);
     border: 1px solid #ddd; border-radius: 10px;
     font-size: 14px; cursor: pointer; font-family: inherit;
   }
-  .actions a:active, .actions button:active {
+  .download-group a:active, .download-group button:active {
     background: #f5f5f5;
   }
 
-  /* ---------- 错误提示 ---------- */
-  #error {
+  /* 错误 */
+  .error {
     display: none; margin-top: 12px; padding: 12px 14px;
     background: #fff2f0; color: #c0392b;
     border: 1px solid #ffccc7; border-radius: 10px;
     font-size: 13px; line-height: 1.6;
   }
 
-  /* ---------- 安装提示 ---------- */
-  #installTip {
-    display: none; margin-top: 12px; padding: 12px 14px;
-    background: #fff7e6; color: #8a6d3b;
-    border: 1px solid #ffe58f; border-radius: 10px;
-    font-size: 13px; line-height: 1.6;
-  }
-  #installTip button {
-    margin-top: 8px; padding: 6px 14px;
-    background: var(--accent); color: #fff;
-    border: none; border-radius: 6px;
-    font-size: 13px; cursor: pointer; font-family: inherit;
-  }
-
-  /* ---------- 登录页 ---------- */
+  /* 登录页 */
   #loginScreen {
-    display: none;
-    position: fixed; inset: 0; z-index: 9999;
-    background: var(--bg);
-    padding: 40px 24px;
-    padding-top: 18vh;
-    box-sizing: border-box;
-    overflow-y: auto;
+    display: none; position: fixed; inset: 0; z-index: 9999;
+    background: var(--bg); padding: 40px 24px;
+    padding-top: 18vh; overflow-y: auto;
   }
   .login-wrap { max-width: 360px; margin: 0 auto; }
-  .login-logo {
-    text-align: center; margin-bottom: 40px;
-  }
-  .login-logo .emoji {
-    font-size: 48px; line-height: 1; margin-bottom: 12px;
-  }
+  .login-logo { text-align: center; margin-bottom: 40px; }
+  .login-logo .emoji { font-size: 48px; margin-bottom: 12px; }
   .login-logo h1 {
-    font-size: 22px; margin: 0; color: var(--fg);
-    letter-spacing: 2px; font-weight: 700;
+    font-size: 22px; margin: 0; letter-spacing: 2px; font-weight: 700;
   }
-  .login-logo p {
-    font-size: 13px; color: var(--muted); margin: 8px 0 0;
-  }
-  .login-field { margin-bottom: 16px; }
-  .login-field label {
-    display: block; font-size: 13px; color: var(--muted);
-    margin-bottom: 6px;
-  }
-  .login-field input {
-    width: 100%; padding: 14px;
-    font-size: 16px;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    background: #fff; color: var(--fg);
-    font-family: inherit;
-  }
+  .login-logo p { font-size: 13px; color: var(--muted); margin-top: 8px; }
   #loginError {
-    display: none;
-    color: #c0392b;
-    font-size: 13px;
-    margin-bottom: 12px;
-    text-align: center;
-    padding: 10px;
-    background: #fff2f0;
-    border-radius: 8px;
+    display: none; color: #c0392b; font-size: 13px;
+    margin-bottom: 12px; text-align: center; padding: 10px;
+    background: #fff2f0; border-radius: 8px;
   }
-  #loginBtn {
-    width: 100%; padding: 16px;
-    font-size: 17px; font-weight: 600; letter-spacing: 2px;
-    background: var(--accent); color: #fff;
-    border: none; border-radius: 12px;
-    cursor: pointer; font-family: inherit;
-    transition: opacity .2s;
-  }
-  #loginBtn:active { transform: scale(.98); }
-  #loginBtn:disabled { background: #ccc; cursor: not-allowed; }
-  .login-foot {
-    text-align: center; font-size: 12px; color: #bbb;
-    margin-top: 24px;
-  }
-
-  /* 主界面默认隐藏，登录后显示 */
   #mainScreen { display: none; }
 
-  /* 顶栏右侧登出按钮 */
-  .logout-btn {
-    font-size: 12px; color: var(--muted);
-    background: none; border: 1px solid var(--rule);
-    padding: 4px 10px; border-radius: 12px;
-    cursor: pointer; font-family: inherit;
-    margin-left: 8px;
+  /* 图片网格 */
+  .img-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin-top: 14px;
   }
-  .logout-btn:active { background: #f5f5f5; }
+  .img-grid img {
+    width: 100%; aspect-ratio: 1; object-fit: cover;
+    border-radius: 8px; cursor: pointer;
+  }
 </style>
 </head>
 <body>
 
-<!-- ============================================================ -->
-<!-- 登录页                                                        -->
-<!-- ============================================================ -->
+<!-- ============ 登录页 ============ -->
 <div id="loginScreen">
   <div class="login-wrap">
     <div class="login-logo">
@@ -276,89 +226,69 @@
       <h1>ArtForge</h1>
       <p>东方艺术生成工坊</p>
     </div>
-
-    <div class="login-field">
+    <div class="field">
       <label>用户名</label>
-      <input id="loginUser" type="text" autocomplete="username"
-             placeholder="admin" value="admin">
+      <input id="loginUser" type="text" value="admin" autocomplete="username">
     </div>
-
-    <div class="login-field">
+    <div class="field">
       <label>密码</label>
-      <input id="loginPass" type="password" autocomplete="current-password"
-             placeholder="请输入密码">
+      <input id="loginPass" type="password" autocomplete="current-password" placeholder="请输入密码">
     </div>
-
     <div id="loginError"></div>
-
-    <button id="loginBtn">登 录</button>
-
-    <p class="login-foot">ArtForge · 仅供本人使用</p>
+    <button id="loginBtn" class="btn">登 录</button>
+    <p style="text-align:center;font-size:12px;color:#bbb;margin-top:24px;">
+      ArtForge · 仅供本人使用
+    </p>
   </div>
 </div>
 
-<!-- ============================================================ -->
-<!-- 主界面（默认隐藏）                                            -->
-<!-- ============================================================ -->
+<!-- ============ 主界面 ============ -->
 <div id="mainScreen">
 
-<header>
-  <h1>🎎 ArtForge</h1>
-  <div style="display:flex;align-items:center;">
-    <span id="status">就绪</span>
-    <button class="logout-btn" onclick="doLogout()">登出</button>
+<div class="topbar">
+  <div class="topbar-row">
+    <h1>🎎 ArtForge</h1>
+    <div class="topbar-right">
+      <span id="status" style="font-size:12px;color:#888;">就绪</span>
+      <button onclick="doLogout()">登出</button>
+    </div>
   </div>
-</header>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="generate">🎨 生图</button>
+    <button class="tab-btn" data-tab="curate">🖼️ 鉴赏</button>
+    <button class="tab-btn" data-tab="format">📝 排版</button>
+    <button class="tab-btn" data-tab="pipeline">⚡ 流水线</button>
+    <button class="tab-btn" data-tab="ukiyoe">🌊 浮世绘</button>
+    <button class="tab-btn" data-tab="config">⚙️ 配置</button>
+  </div>
+</div>
 
 <main>
-  <!-- 安装提示 -->
-  <div id="installTip">
-    <b>💡 可以装成 App</b><br>
-    点浏览器菜单 → 「添加到主屏幕」
-    <button onclick="document.getElementById('installTip').style.display='none'">知道了</button>
-  </div>
 
-  <!-- 自定义 prompt 开关 -->
+<!-- ============ 页 1：生图 ============ -->
+<div class="page active" id="page-generate">
   <div class="switch-row">
     <span>使用自定义 Prompt</span>
-    <div class="switch">
-      <input type="checkbox" id="useCustom">
-      <label for="useCustom"></label>
-    </div>
+    <div class="switch"><input type="checkbox" id="useCustom"><label for="useCustom"></label></div>
   </div>
-
-  <!-- 预设模式 -->
   <div id="presetMode">
-    <div class="field">
-      <label>主题分类</label>
-      <select id="category"></select>
-    </div>
-    <div class="field">
-      <label>预设</label>
-      <select id="preset"></select>
-    </div>
+    <div class="field"><label>主题分类</label><select id="category"></select></div>
+    <div class="field"><label>预设</label><select id="preset"></select></div>
   </div>
-
-  <!-- 自定义 prompt -->
   <div id="customMode" style="display:none">
     <div class="field">
       <label>自定义 Prompt</label>
-      <textarea id="customPrompt"
-                placeholder="例如：a young tengu warrior on a mountain peak, ukiyo-e woodblock print..."></textarea>
+      <textarea id="customPrompt" placeholder="a young tengu warrior..."></textarea>
     </div>
   </div>
-
-  <div class="field">
-    <label>引擎</label>
+  <div class="field"><label>引擎</label>
     <select id="engine">
-      <option value="pollinations">Pollinations（免费，无需 Key）</option>
+      <option value="pollinations">Pollinations（免费）</option>
       <option value="agnes">Agnes AI（需 Key）</option>
       <option value="siliconflow">硅基流动（需 Key）</option>
     </select>
   </div>
-
-  <div class="field">
-    <label>画幅</label>
+  <div class="field"><label>画幅</label>
     <select id="composition">
       <option value="vertical">立轴 9:16</option>
       <option value="horizontal">横卷 16:9</option>
@@ -367,108 +297,191 @@
       <option value="album">册页 3:4</option>
     </select>
   </div>
-
-  <div class="field">
-    <label>印章方案</label>
+  <div class="field"><label>印章方案</label>
     <select id="sealScheme">
-      <option value="contrast">对比鲜明（白文方 + 朱文长方）</option>
-      <option value="classic">传统经典（朱文方 + 朱文长方）</option>
-      <option value="luxury">华丽大气（双边框 + 长方 + 圆印）</option>
-      <option value="minimal">简洁（只有右下朱文方印）</option>
+      <option value="contrast">对比鲜明</option>
+      <option value="classic">传统经典</option>
+      <option value="luxury">华丽大气</option>
+      <option value="minimal">简洁</option>
     </select>
   </div>
-
-  <div class="switch-row">
-    <span>装裱</span>
-    <div class="switch">
-      <input type="checkbox" id="use_scroll" checked>
-      <label for="use_scroll"></label>
-    </div>
+  <div class="switch-row"><span>装裱</span>
+    <div class="switch"><input type="checkbox" id="use_scroll" checked><label for="use_scroll"></label></div>
   </div>
-  <div class="switch-row">
-    <span>做旧</span>
-    <div class="switch">
-      <input type="checkbox" id="use_aging" checked>
-      <label for="use_aging"></label>
-    </div>
+  <div class="switch-row"><span>做旧</span>
+    <div class="switch"><input type="checkbox" id="use_aging" checked><label for="use_aging"></label></div>
   </div>
-  <div class="switch-row">
-    <span>题词</span>
-    <div class="switch">
-      <input type="checkbox" id="use_inscription" checked>
-      <label for="use_inscription"></label>
-    </div>
+  <div class="switch-row"><span>题词</span>
+    <div class="switch"><input type="checkbox" id="use_inscription" checked><label for="use_inscription"></label></div>
   </div>
-  <div class="switch-row">
-    <span>印章</span>
-    <div class="switch">
-      <input type="checkbox" id="use_seal" checked>
-      <label for="use_seal"></label>
-    </div>
+  <div class="switch-row"><span>印章</span>
+    <div class="switch"><input type="checkbox" id="use_seal" checked><label for="use_seal"></label></div>
   </div>
-  <div class="switch-row">
-    <span>水印</span>
-    <div class="switch">
-      <input type="checkbox" id="use_watermark" checked>
-      <label for="use_watermark"></label>
-    </div>
+  <div class="switch-row"><span>水印</span>
+    <div class="switch"><input type="checkbox" id="use_watermark" checked><label for="use_watermark"></label></div>
   </div>
-
   <button class="btn" id="genBtn">开始创作</button>
+  <div class="progress" id="genProgress"><div class="progress-bar" id="genBar"></div></div>
+  <div class="progress-msg" id="genMsg"></div>
+  <div class="error" id="genError"></div>
+  <div id="genPreview"></div>
+</div>
 
-  <div id="progressWrap">
-    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
-    <div id="progressMsg">准备中…</div>
+<!-- ============ 页 2：鉴赏 ============ -->
+<div class="page" id="page-curate">
+  <div class="field">
+    <label>图片目录（相对项目根）</label>
+    <select id="curateDir"></select>
   </div>
+  <div class="field">
+    <label>文章标题（可留空）</label>
+    <input type="text" id="curateTitle" placeholder="留空自动用目录名">
+  </div>
+  <div class="switch-row"><span>生成 HTML</span>
+    <div class="switch"><input type="checkbox" id="cu_html" checked><label for="cu_html"></label></div>
+  </div>
+  <div class="switch-row"><span>生成 Word (.docx)</span>
+    <div class="switch"><input type="checkbox" id="cu_docx" checked><label for="cu_docx"></label></div>
+  </div>
+  <div class="switch-row"><span>生成 PDF</span>
+    <div class="switch"><input type="checkbox" id="cu_pdf" checked><label for="cu_pdf"></label></div>
+  </div>
+  <div class="switch-row"><span>生成富文本（微信/知乎）</span>
+    <div class="switch"><input type="checkbox" id="cu_clip" checked><label for="cu_clip"></label></div>
+  </div>
+  <button class="btn" id="cuBtn">开始鉴赏</button>
+  <div class="progress" id="cuProgress"><div class="progress-bar" id="cuBar"></div></div>
+  <div class="progress-msg" id="cuMsg"></div>
+  <div class="error" id="cuError"></div>
+  <div id="cuResult"></div>
+</div>
 
-  <div id="error"></div>
-  <div id="preview"></div>
+<!-- ============ 页 3：排版 ============ -->
+<div class="page" id="page-format">
+  <div class="field">
+    <label>Markdown 文件路径</label>
+    <input type="text" id="fmtPath" placeholder="output/articles/xxx/article.md">
+  </div>
+  <div class="field">
+    <label>主题</label>
+    <select id="fmtTheme"></select>
+  </div>
+  <button class="btn" id="fmtBtn">开始排版</button>
+  <div class="progress" id="fmtProgress"><div class="progress-bar" id="fmtBar"></div></div>
+  <div class="progress-msg" id="fmtMsg"></div>
+  <div class="error" id="fmtError"></div>
+  <div id="fmtResult"></div>
+</div>
+
+<!-- ============ 页 4：流水线 ============ -->
+<div class="page" id="page-pipeline">
+  <div class="field"><label>主题分类</label><select id="pipeCat"></select></div>
+  <div class="field"><label>预设（留空则随机）</label><select id="pipePreset"><option value="">随机</option></select></div>
+  <div class="field"><label>引擎</label>
+    <select id="pipeEngine">
+      <option value="pollinations">Pollinations</option>
+      <option value="agnes">Agnes AI</option>
+      <option value="siliconflow">硅基流动</option>
+    </select>
+  </div>
+  <div class="field"><label>画幅</label>
+    <select id="pipeComp">
+      <option value="vertical">立轴</option>
+      <option value="horizontal">横卷</option>
+      <option value="byobu">屏风</option>
+      <option value="fan">团扇</option>
+      <option value="album">册页</option>
+    </select>
+  </div>
+  <div class="field"><label>生成张数</label>
+    <input type="number" id="pipeCount" value="3" min="1" max="20">
+  </div>
+  <div class="field"><label>鉴赏标题（可留空）</label>
+    <input type="text" id="pipeTitle" placeholder="自动生成">
+  </div>
+  <div class="field"><label>排版主题</label>
+    <select id="pipeTheme"></select>
+  </div>
+  <div class="switch-row"><span>鉴赏（写文章 + Word/PDF）</span>
+    <div class="switch"><input type="checkbox" id="pipeCurate" checked><label for="pipeCurate"></label></div>
+  </div>
+  <div class="switch-row"><span>排版（微信 HTML）</span>
+    <div class="switch"><input type="checkbox" id="pipeFormat" checked><label for="pipeFormat"></label></div>
+  </div>
+  <button class="btn" id="pipeBtn">开始流水线</button>
+  <div class="progress" id="pipeProgress"><div class="progress-bar" id="pipeBar"></div></div>
+  <div class="progress-msg" id="pipeMsg"></div>
+  <div class="error" id="pipeError"></div>
+  <div id="pipeResult"></div>
+</div>
+
+<!-- ============ 页 5：浮世绘 ============ -->
+<div class="page" id="page-ukiyoe">
+  <div class="field"><label>图片目录</label><select id="ukDir"></select></div>
+  <div class="field"><label>引擎</label>
+    <select id="ukEngine">
+      <option value="pollinations">Pollinations</option>
+      <option value="agnes">Agnes AI</option>
+    </select>
+  </div>
+  <div class="field"><label>强度（0-1，越大越浮世绘）</label>
+    <input type="number" id="ukStrength" value="0.75" step="0.05" min="0.1" max="1">
+  </div>
+  <div class="field"><label>印章文字</label>
+    <input type="text" id="ukSeal" value="東方藝術">
+  </div>
+  <div class="field"><label>最多处理张数</label>
+    <input type="number" id="ukMax" value="10" min="1" max="50">
+  </div>
+  <button class="btn" id="ukBtn">开始转换</button>
+  <div class="progress" id="ukProgress"><div class="progress-bar" id="ukBar"></div></div>
+  <div class="progress-msg" id="ukMsg"></div>
+  <div class="error" id="ukError"></div>
+  <div id="ukResult"></div>
+</div>
+
+<!-- ============ 页 6：配置 ============ -->
+<div class="page" id="page-config">
+  <button class="btn btn-secondary" onclick="loadConfig()">🔄 刷新配置</button>
+  <div class="card" id="configBox" style="margin-top:16px;">
+    <em style="color:#999;">点击上方按钮加载配置</em>
+  </div>
+</div>
+
 </main>
-
-</div><!-- /mainScreen -->
+</div>
 
 <script>
 'use strict';
 
 const $ = (s) => document.querySelector(s);
-let currentTaskId = null;
-let pollTimer = null;
+const $$ = (s) => document.querySelectorAll(s);
 
 // ============================================================
-// 认证逻辑
+// 认证
 // ============================================================
 
-const AUTH_KEY = 'artforge_auth';   // localStorage 里的键
+const AUTH_KEY = 'artforge_auth';
 
-function getAuth() {
-  return localStorage.getItem(AUTH_KEY) || '';
-}
+function getAuth() { return localStorage.getItem(AUTH_KEY) || ''; }
 
 function setAuth(user, pass) {
-  // HTTP Basic: "Basic " + base64("user:pass")
-  // btoa 只支持 Latin-1，用 encodeURIComponent 处理中文/特殊字符
   const raw = user + ':' + pass;
   const encoded = btoa(unescape(encodeURIComponent(raw)));
   localStorage.setItem(AUTH_KEY, 'Basic ' + encoded);
 }
 
-function clearAuth() {
-  localStorage.removeItem(AUTH_KEY);
-}
+function clearAuth() { localStorage.removeItem(AUTH_KEY); }
 
-// 带认证的 fetch（替代普通 fetch）
 async function authFetch(url, opts = {}) {
   opts.headers = opts.headers || {};
   const auth = getAuth();
-  if (auth) {
-    opts.headers['Authorization'] = auth;
-  }
+  if (auth) opts.headers['Authorization'] = auth;
   const r = await fetch(url, opts);
   if (r.status === 401) {
-    // 认证失效 → 清理 → 显示登录页
     clearAuth();
     showLogin();
-    const err = new Error('认证失效，请重新登录');
+    const err = new Error('认证失效');
     err.__auth_failed = true;
     throw err;
   }
@@ -485,22 +498,15 @@ function showMain() {
   $('#mainScreen').style.display = 'block';
 }
 
-// 尝试用给定账号密码登录
 async function tryLogin(user, pass) {
-  // 临时写入，供 fetch 用
   setAuth(user, pass);
   try {
     const r = await fetch('/api/login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': getAuth(),
-      },
-      body: JSON.stringify({ username: user, password: pass }),
+      headers: {'Content-Type': 'application/json', 'Authorization': getAuth()},
+      body: JSON.stringify({username: user, password: pass}),
     });
-    if (r.ok) {
-      return true;
-    }
+    if (r.ok) return true;
     clearAuth();
     return false;
   } catch (e) {
@@ -509,75 +515,136 @@ async function tryLogin(user, pass) {
   }
 }
 
-// 登出
 function doLogout() {
-  if (!confirm('确定要登出吗？')) return;
+  if (!confirm('确定登出？')) return;
   clearAuth();
-  currentTaskId = null;
-  if (pollTimer) {
-    clearInterval(pollTimer);
-    pollTimer = null;
-  }
   showLogin();
-  // 清空密码框
-  const el = $('#loginPass');
-  if (el) el.value = '';
+  $('#loginPass').value = '';
 }
 
 // ============================================================
-// 业务逻辑
+// Tab 切换
 // ============================================================
 
-// 加载预设
+$$('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    const tab = btn.dataset.tab;
+    $$('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+    $$('.page').forEach(p => p.classList.toggle('active', p.id === 'page-' + tab));
+    // 进入某些 tab 时自动加载数据
+    if (tab === 'curate') loadCurateDirs();
+    if (tab === 'ukiyoe') loadUkiyoeDirs();
+    if (tab === 'config') loadConfig();
+  };
+});
+
+// ============================================================
+// 工具
+// ============================================================
+
+function setStatus(text) { $('#status').textContent = text; }
+
+function setProgress(barId, msgId, p, msg) {
+  const bar = $('#' + barId);
+  const msgEl = $('#' + msgId);
+  if (bar) bar.parentElement.style.display = 'block';
+  if (bar) bar.style.width = p + '%';
+  if (msgEl) msgEl.textContent = msg || '';
+}
+
+function showError(id, msg) {
+  const el = $('#' + id);
+  el.textContent = '❌ ' + msg;
+  el.style.display = 'block';
+}
+
+function hideError(id) {
+  const el = $('#' + id);
+  if (el) el.style.display = 'none';
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// 轮询任务
+async function pollTask(urlBase, taskId, barId, msgId, onDone, onError) {
+  let lastP = 0;
+  const timer = setInterval(async () => {
+    try {
+      const r = await authFetch(`${urlBase}/task/${taskId}`);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const s = await r.json();
+      if (s.progress > lastP) {
+        lastP = s.progress;
+        setProgress(barId, msgId, s.progress, s.message);
+      } else if (s.message) {
+        $('#' + msgId).textContent = s.message;
+      }
+      if (s.status === 'done') {
+        clearInterval(timer);
+        onDone(taskId, s.result);
+      } else if (s.status === 'error') {
+        clearInterval(timer);
+        onError(s.error || '未知错误');
+      }
+    } catch (e) {
+      if (e.__auth_failed) { clearInterval(timer); return; }
+    }
+  }, 1000);
+}
+
+// ============================================================
+// 生图
+// ============================================================
+
 async function loadPresets() {
   try {
     const r = await authFetch('/api/presets');
     const data = await r.json();
     const cats = Object.keys(data);
-    if (!cats.length) throw new Error('无预设');
-
-    $('#category').innerHTML = cats
-      .map(c => `<option value="${c}">${c}</option>`).join('');
+    $('#category').innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+    // 顺便填充流水线页
+    $('#pipeCat').innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
     updatePresets(data);
+    updatePipePresets(data);
     $('#category').onchange = () => updatePresets(data);
-
+    $('#pipeCat').onchange = () => updatePipePresets(data);
     window._presetsData = data;
   } catch (e) {
-    if (e.__auth_failed) return;   // 401 已处理
+    if (e.__auth_failed) return;
     console.error(e);
-    $('#status').textContent = '预设加载失败';
   }
 }
 
 function updatePresets(data) {
   const cat = $('#category').value;
   const list = data[cat] || [];
-  $('#preset').innerHTML = list
-    .map(p => `<option value="${p}">${p}</option>`).join('');
+  $('#preset').innerHTML = list.map(p => `<option value="${p}">${p}</option>`).join('');
 }
 
-// 自定义 prompt 切换
+function updatePipePresets(data) {
+  const cat = $('#pipeCat').value;
+  const list = data[cat] || [];
+  $('#pipePreset').innerHTML = '<option value="">随机</option>' +
+    list.map(p => `<option value="${p}">${p}</option>`).join('');
+}
+
 $('#useCustom').onchange = (e) => {
   const on = e.target.checked;
   $('#presetMode').style.display = on ? 'none' : '';
   $('#customMode').style.display = on ? '' : 'none';
 };
 
-// 生成
 $('#genBtn').onclick = async () => {
-  if (currentTaskId) return;
-
   $('#genBtn').disabled = true;
   $('#genBtn').textContent = '生成中…';
-  $('#status').textContent = '生成中…';
-  $('#error').style.display = 'none';
-  $('#preview').innerHTML = '';
-  $('#progressWrap').style.display = 'block';
-  $('#progressBar').style.width = '0%';
-  $('#progressMsg').textContent = '提交任务…';
+  hideError('genError');
+  $('#genPreview').innerHTML = '';
+  setProgress('genBar', 'genMsg', 0, '提交…');
 
   const useCustom = $('#useCustom').checked;
-
   const body = {
     category: $('#category').value,
     engine: $('#engine').value,
@@ -589,186 +656,366 @@ $('#genBtn').onclick = async () => {
     use_seal: $('#use_seal').checked,
     use_watermark: $('#use_watermark').checked,
   };
-
   if (useCustom) {
     body.custom_prompt = $('#customPrompt').value.trim();
-    if (!body.custom_prompt) {
-      alert('请输入自定义 Prompt');
-      resetBtn();
-      return;
-    }
+    if (!body.custom_prompt) { alert('请输入 Prompt'); resetGenBtn(); return; }
   } else {
     body.preset = $('#preset').value;
-    if (!body.preset) {
-      alert('请选择预设');
-      resetBtn();
-      return;
-    }
+    if (!body.preset) { alert('请选择预设'); resetGenBtn(); return; }
   }
 
   try {
     const r = await authFetch('/api/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(body),
     });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const { task_id } = await r.json();
-    currentTaskId = task_id;
-    pollTask(task_id);
+    const {task_id} = await r.json();
+    pollTask('/api', task_id, 'genBar', 'genMsg',
+      (tid, meta) => showGenResult(tid, meta),
+      (err) => { showError('genError', err); resetGenBtn(); });
   } catch (e) {
-    if (e.__auth_failed) return;
-    showError('提交失败: ' + e.message);
-    resetBtn();
+    if (!e.__auth_failed) { showError('genError', e.message); }
+    resetGenBtn();
   }
 };
 
-function pollTask(taskId) {
-  let lastProgress = 0;
-  pollTimer = setInterval(async () => {
-    try {
-      const r = await authFetch(`/api/task/${taskId}`);
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const s = await r.json();
-
-      if (s.progress > lastProgress) {
-        lastProgress = s.progress;
-        $('#progressBar').style.width = s.progress + '%';
-      }
-      if (s.message) $('#progressMsg').textContent = s.message;
-
-      if (s.status === 'done') {
-        clearInterval(pollTimer);
-        pollTimer = null;
-        showResult(taskId, s.result);
-        resetBtn();
-      } else if (s.status === 'error') {
-        clearInterval(pollTimer);
-        pollTimer = null;
-        showError(s.error || '未知错误');
-        resetBtn();
-      }
-    } catch (e) {
-      if (e.__auth_failed) {
-        clearInterval(pollTimer);
-        pollTimer = null;
-        return;
-      }
-      console.warn('poll error', e);
-    }
-  }, 900);
+function resetGenBtn() {
+  $('#genBtn').disabled = false;
+  $('#genBtn').textContent = '开始创作';
 }
 
-function showResult(taskId, meta) {
-  $('#status').textContent = '完成 ✓';
-  $('#progressBar').style.width = '100%';
-  $('#progressMsg').textContent = '完成';
-
-  // 图片需要带认证头，用 blob URL 显示
-  const imgApi = `/api/image/${taskId}?t=${Date.now()}`;
-
-  $('#preview').innerHTML = `
-    <img id="resultImg" src="" alt="作品">
-    <div class="meta">
+function showGenResult(tid, meta) {
+  setStatus('完成');
+  resetGenBtn();
+  const imgUrl = `/api/image/${tid}?t=${Date.now()}`;
+  $('#genPreview').innerHTML = `
+    <img class="result-img" id="genImg" src="">
+    <div class="card">
       <div><b>主题</b>：${escapeHtml(meta.theme || '通用')}</div>
       <div><b>预设</b>：${escapeHtml(meta.preset)}</div>
       <div><b>尺寸</b>：${meta.width} × ${meta.height}</div>
       ${meta.inscription ? `<div><b>题词</b>：${escapeHtml(meta.inscription)}</div>` : ''}
     </div>
-    <div class="actions">
-      <a id="downloadBtn" href="#" download="artforge_${meta.preset}_${taskId.slice(0,8)}.png">下载原图</a>
-      <button id="shareBtn">分享</button>
-    </div>
-  `;
-
-  // 加载图片（带 Authorization）
+    <div class="download-group">
+      <a id="genDl" href="#" download="artforge.png">下载</a>
+      <button id="genShare">分享</button>
+    </div>`;
   (async () => {
-    try {
-      const r = await authFetch(imgApi);
-      const blob = await r.blob();
-      const objUrl = URL.createObjectURL(blob);
-      const img = $('#resultImg');
-      img.src = objUrl;
-      const dl = $('#downloadBtn');
-      dl.href = objUrl;
-      $('#shareBtn').onclick = () => shareImg(objUrl);
-    } catch (e) {
-      if (!e.__auth_failed) {
-        showError('图片加载失败: ' + e.message);
-      }
-    }
+    const r = await authFetch(imgUrl);
+    const blob = await r.blob();
+    const objUrl = URL.createObjectURL(blob);
+    $('#genImg').src = objUrl;
+    $('#genDl').href = objUrl;
+    $('#genShare').onclick = () => shareImg(objUrl);
   })();
-
-  setTimeout(() => {
-    $('#preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 200);
+  $('#genPreview').scrollIntoView({behavior:'smooth'});
 }
 
-function resetBtn() {
-  currentTaskId = null;
-  $('#genBtn').disabled = false;
-  $('#genBtn').textContent = '开始创作';
-}
-
-function showError(msg) {
-  const el = $('#error');
-  el.textContent = '❌ ' + msg;
-  el.style.display = 'block';
-  $('#status').textContent = '失败';
-}
-
-function escapeHtml(s) {
-  return String(s || '')
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-// 分享
 async function shareImg(url) {
   try {
     const blob = await fetch(url).then(r => r.blob());
-    const file = new File([blob], 'artforge.png', { type: 'image/png' });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        files: [file],
-        title: 'ArtForge 作品',
-        text: '由 ArtForge 生成',
-      });
+    const file = new File([blob], 'artforge.png', {type: 'image/png'});
+    if (navigator.canShare && navigator.canShare({files: [file]})) {
+      await navigator.share({files: [file], title: 'ArtForge 作品'});
     } else {
-      alert('当前浏览器不支持系统分享，请点「下载原图」后手动分享');
+      alert('当前浏览器不支持分享，请点下载');
     }
   } catch (e) {
-    if (e.name !== 'AbortError') {
-      alert('分享失败：' + e.message);
-    }
-  }
-}
-
-// 注册 Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(
-      (reg) => console.log('SW 注册成功:', reg.scope),
-      (err) => console.warn('SW 注册失败:', err),
-    );
-  });
-}
-
-// 安装提示
-function checkInstallTip() {
-  const isStandalone =
-    window.matchMedia('(display-mode: standalone)').matches ||
-    window.navigator.standalone === true;
-  if (!isStandalone) {
-    setTimeout(() => {
-      $('#installTip').style.display = 'block';
-    }, 3000);
+    if (e.name !== 'AbortError') alert('分享失败: ' + e.message);
   }
 }
 
 // ============================================================
-// 登录按钮 + 启动逻辑
+// 鉴赏
+// ============================================================
+
+async function loadCurateDirs() {
+  try {
+    const r = await authFetch('/api/curate/dirs');
+    const {dirs} = await r.json();
+    if (!dirs.length) {
+      $('#curateDir').innerHTML = '<option value="">（暂无含图片的目录）</option>';
+      return;
+    }
+    $('#curateDir').innerHTML = dirs
+      .map(d => `<option value="${d.path}">${d.path} (${d.count} 张)</option>`)
+      .join('');
+  } catch (e) {
+    if (!e.__auth_failed) console.error(e);
+  }
+}
+
+$('#cuBtn').onclick = async () => {
+  const dir = $('#curateDir').value;
+  if (!dir) { alert('请选择目录'); return; }
+  $('#cuBtn').disabled = true;
+  $('#cuBtn').textContent = '鉴赏中…';
+  hideError('cuError');
+  $('#cuResult').innerHTML = '';
+  setProgress('cuBar', 'cuMsg', 0, '提交…');
+
+  try {
+    const r = await authFetch('/api/curate', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        image_dir: dir,
+        title: $('#curateTitle').value.trim() || null,
+        generate_html: $('#cu_html').checked,
+        generate_docx: $('#cu_docx').checked,
+        generate_pdf: $('#cu_pdf').checked,
+        generate_clipboard: $('#cu_clip').checked,
+      }),
+    });
+    const {task_id} = await r.json();
+    pollTask('/api/curate', task_id, 'cuBar', 'cuMsg',
+      (tid, res) => showCurateResult(tid, res),
+      (err) => { showError('cuError', err); resetCuBtn(); });
+  } catch (e) {
+    if (!e.__auth_failed) showError('cuError', e.message);
+    resetCuBtn();
+  }
+};
+
+function resetCuBtn() {
+  $('#cuBtn').disabled = false;
+  $('#cuBtn').textContent = '开始鉴赏';
+}
+
+function showCurateResult(tid, res) {
+  setStatus('鉴赏完成');
+  resetCuBtn();
+  const links = [];
+  if (res.md_path) links.push(`<a href="/api/curate/download/${tid}/md" download>📄 Markdown</a>`);
+  if (res.html_path) links.push(`<a href="/api/curate/download/${tid}/html" target="_blank">🌐 HTML</a>`);
+  if (res.docx_path) links.push(`<a href="/api/curate/download/${tid}/docx" download>📘 Word</a>`);
+  if (res.pdf_path) links.push(`<a href="/api/curate/download/${tid}/pdf" download>📕 PDF</a>`);
+  if (res.clipboard_path) links.push(`<a href="/api/curate/download/${tid}/clipboard" target="_blank">📋 富文本（微信/知乎）</a>`);
+
+  $('#cuResult').innerHTML = `
+    <div class="card">
+      <div><b>标题</b>：${escapeHtml(res.title)}</div>
+      <div><b>图片数</b>：${res.image_count} 张</div>
+      <div><b>输出目录</b>：${escapeHtml(res.article_dir)}</div>
+    </div>
+    <div class="download-group">${links.join('')}</div>`;
+}
+
+// ============================================================
+// 排版
+// ============================================================
+
+async function loadThemes() {
+  try {
+    const r = await authFetch('/api/format/themes');
+    const {themes} = await r.json();
+    const opts = themes.map(t => `<option value="${t}">${t}</option>`).join('');
+    $('#fmtTheme').innerHTML = opts;
+    $('#pipeTheme').innerHTML = opts;
+  } catch (e) {
+    if (!e.__auth_failed) console.error(e);
+  }
+}
+
+$('#fmtBtn').onclick = async () => {
+  const path = $('#fmtPath').value.trim();
+  if (!path) { alert('请输入 Markdown 路径'); return; }
+  $('#fmtBtn').disabled = true;
+  $('#fmtBtn').textContent = '排版中…';
+  hideError('fmtError');
+  $('#fmtResult').innerHTML = '';
+  setProgress('fmtBar', 'fmtMsg', 0, '提交…');
+
+  try {
+    const r = await authFetch('/api/format', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({md_path: path, theme: $('#fmtTheme').value}),
+    });
+    const {task_id} = await r.json();
+    pollTask('/api/format', task_id, 'fmtBar', 'fmtMsg',
+      (tid, res) => showFormatResult(tid, res),
+      (err) => { showError('fmtError', err); resetFmtBtn(); });
+  } catch (e) {
+    if (!e.__auth_failed) showError('fmtError', e.message);
+    resetFmtBtn();
+  }
+};
+
+function resetFmtBtn() {
+  $('#fmtBtn').disabled = false;
+  $('#fmtBtn').textContent = '开始排版';
+}
+
+function showFormatResult(tid, res) {
+  setStatus('排版完成');
+  resetFmtBtn();
+  $('#fmtResult').innerHTML = `
+    <div class="card">
+      <div><b>标题</b>：${escapeHtml(res.title)}</div>
+      <div><b>主题</b>：${escapeHtml(res.theme)}</div>
+      <div><b>字数</b>：${res.word_count}</div>
+      <div><b>输出目录</b>：${escapeHtml(res.article_dir)}</div>
+    </div>
+    <div class="download-group">
+      <a href="/api/format/download/${tid}/preview" target="_blank">🌐 预览</a>
+      <a href="/api/format/download/${tid}/article" download>📄 HTML</a>
+    </div>`;
+}
+
+// ============================================================
+// 流水线
+// ============================================================
+
+$('#pipeBtn').onclick = async () => {
+  $('#pipeBtn').disabled = true;
+  $('#pipeBtn').textContent = '运行中…';
+  hideError('pipeError');
+  $('#pipeResult').innerHTML = '';
+  setProgress('pipeBar', 'pipeMsg', 0, '提交…');
+
+  try {
+    const r = await authFetch('/api/pipeline', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        category: $('#pipeCat').value,
+        preset: $('#pipePreset').value || null,
+        engine: $('#pipeEngine').value,
+        composition: $('#pipeComp').value,
+        count: parseInt($('#pipeCount').value) || 3,
+        do_curate: $('#pipeCurate').checked,
+        do_format: $('#pipeFormat').checked,
+        curate_title: $('#pipeTitle').value.trim() || null,
+        theme: $('#pipeTheme').value,
+      }),
+    });
+    const {task_id} = await r.json();
+    pollTask('/api/pipeline', task_id, 'pipeBar', 'pipeMsg',
+      (tid, res) => showPipelineResult(tid, res),
+      (err) => { showError('pipeError', err); resetPipeBtn(); });
+  } catch (e) {
+    if (!e.__auth_failed) showError('pipeError', e.message);
+    resetPipeBtn();
+  }
+};
+
+function resetPipeBtn() {
+  $('#pipeBtn').disabled = false;
+  $('#pipeBtn').textContent = '开始流水线';
+}
+
+function showPipelineResult(tid, res) {
+  setStatus('流水线完成');
+  resetPipeBtn();
+  const links = [];
+  if (res.md_path) links.push(`<a href="/api/pipeline/download/${tid}/md" download>📄 MD</a>`);
+  if (res.docx_path) links.push(`<a href="/api/pipeline/download/${tid}/docx" download>📘 Word</a>`);
+  if (res.pdf_path) links.push(`<a href="/api/pipeline/download/${tid}/pdf" download>📕 PDF</a>`);
+  if (res.article_path) links.push(`<a href="/api/pipeline/download/${tid}/article" download>📰 微信HTML</a>`);
+  if (res.preview_path) links.push(`<a href="/api/pipeline/download/${tid}/preview" target="_blank">🌐 预览</a>`);
+
+  $('#pipeResult').innerHTML = `
+    <div class="card">
+      <div><b>生成图片</b>：${res.count} 张</div>
+      <div><b>图片目录</b>：${escapeHtml(res.image_dir)}</div>
+    </div>
+    <div class="download-group">${links.join('')}</div>`;
+}
+
+// ============================================================
+// 浮世绘
+// ============================================================
+
+async function loadUkiyoeDirs() {
+  try {
+    const r = await authFetch('/api/ukiyoe/dirs');
+    const {dirs} = await r.json();
+    if (!dirs.length) {
+      $('#ukDir').innerHTML = '<option value="">（暂无含图片的目录）</option>';
+      return;
+    }
+    $('#ukDir').innerHTML = dirs
+      .map(d => `<option value="${d.path}">${d.path} (${d.count} 张)</option>`)
+      .join('');
+  } catch (e) {
+    if (!e.__auth_failed) console.error(e);
+  }
+}
+
+$('#ukBtn').onclick = async () => {
+  const dir = $('#ukDir').value;
+  if (!dir) { alert('请选择目录'); return; }
+  $('#ukBtn').disabled = true;
+  $('#ukBtn').textContent = '转换中…';
+  hideError('ukError');
+  $('#ukResult').innerHTML = '';
+  setProgress('ukBar', 'ukMsg', 0, '提交…');
+
+  try {
+    const r = await authFetch('/api/ukiyoe', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        image_dir: dir,
+        engine: $('#ukEngine').value,
+        strength: parseFloat($('#ukStrength').value) || 0.75,
+        seal_text: $('#ukSeal').value || '東方藝術',
+        max_images: parseInt($('#ukMax').value) || 10,
+      }),
+    });
+    const {task_id} = await r.json();
+    pollTask('/api/ukiyoe', task_id, 'ukBar', 'ukMsg',
+      (tid, res) => showUkiyoeResult(tid, res),
+      (err) => { showError('ukError', err); resetUkBtn(); });
+  } catch (e) {
+    if (!e.__auth_failed) showError('ukError', e.message);
+    resetUkBtn();
+  }
+};
+
+function resetUkBtn() {
+  $('#ukBtn').disabled = false;
+  $('#ukBtn').textContent = '开始转换';
+}
+
+function showUkiyoeResult(tid, res) {
+  setStatus('浮世绘完成');
+  resetUkBtn();
+  const imgs = res.images.map((_, i) =>
+    `<a href="/api/ukiyoe/image/${tid}?idx=${i}" target="_blank">
+       <img src="/api/ukiyoe/image/${tid}?idx=${i}&t=${Date.now()}" alt="作品${i+1}">
+     </a>`).join('');
+  $('#ukResult').innerHTML = `
+    <div class="card">
+      <div><b>成功</b>：${res.count} / ${res.total} 张</div>
+      <div><b>输出目录</b>：${escapeHtml(res.output_dir)}</div>
+    </div>
+    <div class="img-grid">${imgs}</div>`;
+}
+
+// ============================================================
+// 配置
+// ============================================================
+
+async function loadConfig() {
+  try {
+    const r = await authFetch('/api/config');
+    const {config} = await r.json();
+    const rows = Object.entries(config)
+      .map(([k, v]) => `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #eee;">
+        <b style="flex-shrink:0;min-width:200px;font-family:monospace;font-size:12px;">${escapeHtml(k)}</b>
+        <span style="font-family:monospace;font-size:12px;word-break:break-all;">${escapeHtml(v)}</span>
+      </div>`).join('');
+    $('#configBox').innerHTML = rows || '<em>（无配置）</em>';
+  } catch (e) {
+    if (!e.__auth_failed) $('#configBox').innerHTML = '加载失败: ' + e.message;
+  }
+}
+
+// ============================================================
+// 登录交互
 // ============================================================
 
 $('#loginBtn').onclick = async () => {
@@ -782,7 +1029,6 @@ $('#loginBtn').onclick = async () => {
     err.style.display = 'block';
     return;
   }
-
   btn.disabled = true;
   btn.textContent = '登录中…';
   err.style.display = 'none';
@@ -790,9 +1036,8 @@ $('#loginBtn').onclick = async () => {
   const ok = await tryLogin(user, pass);
   if (ok) {
     showMain();
-    // 主界面初始化
     loadPresets();
-    checkInstallTip();
+    loadThemes();
   } else {
     err.textContent = '用户名或密码错误';
     err.style.display = 'block';
@@ -801,42 +1046,28 @@ $('#loginBtn').onclick = async () => {
   }
 };
 
-// 回车提交
-$('#loginPass').addEventListener('keydown', (e) => {
+$('#loginPass').addEventListener('keydown', e => {
   if (e.key === 'Enter') $('#loginBtn').click();
 });
-$('#loginUser').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') $('#loginPass').focus();
-});
 
-// 启动：检查是否已登录
-(async function initAuth() {
+// 启动
+(async function init() {
   const auth = getAuth();
-  if (!auth) {
-    showLogin();
-    return;
-  }
-  // 试探一下 auth 是否还有效
+  if (!auth) { showLogin(); return; }
   try {
-    const r = await fetch('/api/presets', {
-      headers: { 'Authorization': auth },
-    });
-    if (r.status === 401) {
-      clearAuth();
-      showLogin();
-    } else if (r.ok) {
-      showMain();
-      loadPresets();
-      checkInstallTip();
-    } else {
-      // 其他错误 → 也显示登录页（后端可能挂了）
-      showLogin();
-    }
-  } catch (e) {
-    // 网络问题 → 显示登录页
-    showLogin();
-  }
+    const r = await fetch('/api/presets', {headers: {'Authorization': auth}});
+    if (r.status === 401) { clearAuth(); showLogin(); }
+    else if (r.ok) { showMain(); loadPresets(); loadThemes(); }
+    else showLogin();
+  } catch { showLogin(); }
 })();
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 
 </script>
 </body>
