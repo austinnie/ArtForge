@@ -212,6 +212,7 @@ class SocialAutoUpload:
             "--account", account,
             "--file", str(file_path),
             "--title", title,
+            "--headed",  # ✅ 加上这一行，强制使用有头浏览器模式
         ]
         if desc:
             args += ["--desc", desc]
