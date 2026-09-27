@@ -20,7 +20,7 @@ SUPPORTED_PLATFORMS = [
     "instagram", "facebook", "toutiao",
 ]
 
-NOTE_PLATFORMS = ["douyin", "kuaishou", "xiaohongshu",hongshu", "instagram", "facebook", "toutiao"]
+NOTE_PLATFORMS = ["douyin", "kuaishou", "xiaohongshu","instagram", "facebook", "toutiao"]
 
 SCHEDULE_PLATFORMS = [
     "douyin", "kuaishou", "xiaohongshu", "bilibili", "tencent",
