@@ -1,0 +1,26 @@
+{
+  "name": "ArtForge · 东方艺术生成工坊",
+  "short_name": "ArtForge",
+  "description": "用 AI 生成带画幅、题词、印章、年代感的东方艺术作品",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fafaf7",
+  "theme_color": "#c25b3b",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

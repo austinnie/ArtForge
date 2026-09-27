@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#c25b3b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ArtForge">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>ArtForge · 东方艺术</title>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --fg: #2a2a2a;
+    --muted: #888;
+    --accent: #c25b3b;
+    --rule: #e8e4dc;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--fg);
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: contain;
+  }
+  body {
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    min-height: 100vh;
+  }
+
+  /* ---------- 顶栏 ---------- */
+  header {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(255,255,255,.95);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--rule);
+    padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 {
+    font-size: 17px; margin: 0; letter-spacing: 2px;
+    font-weight: 700; color: var(--fg);
+  }
+  #status {
+    font-size: 12px; color: var(--muted);
+    max-width: 45%; text-align: right;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* ---------- 主体 ---------- */
+  main {
+    max-width: 640px; margin: 0 auto;
+    padding: 16px;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: 13px; color: var(--muted);
+    margin-bottom: 6px; font-weight: 500;
+  }
+  .field select,
+  .field input[type="text"],
+  .field input[type="number"],
+  .field textarea {
+    width: 100%; padding: 12px 14px;
+    font-size: 16px;  /* 16px 防 iOS 自动缩放 */
+    border: 1px solid #e0e0e0; border-radius: 10px;
+    background: var(--card); color: var(--fg);
+    font-family: inherit; -webkit-appearance: none;
+    appearance: none;
+  }
+  .field select {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+  .field textarea {
+    resize: vertical; min-height: 80px; line-height: 1.5;
+  }
+
+  /* ---------- 开关 ---------- */
+  .switch-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid #f2efe9;
+  }
+  .switch-row:last-of-type { border-bottom: none; }
+  .switch-row span { font-size: 15px; color: var(--fg); }
+  .switch { position: relative; width: 48px; height: 28px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch label {
+    position: absolute; inset: 0;
+    background: #ddd; border-radius: 14px;
+    transition: background .2s; cursor: pointer; display: block;
+  }
+  .switch label::before {
+    content: ''; position: absolute;
+    width: 22px; height: 22px; left: 3px; top: 3px;
+    background: #fff; border-radius: 50%;
+    transition: transform .2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+  .switch input:checked + label { background: var(--accent); }
+  .switch input:checked + label::before { transform: translateX(20px); }
+
+  /* ---------- 按钮 ---------- */
+  .btn {
+    width: 100%; padding: 16px;
+    font-size: 17px; font-weight: 600; letter-spacing: 2px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 12px;
+    margin-top: 20px; cursor: pointer;
+    transition: opacity .2s, transform .1s;
+    font-family: inherit;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn:disabled { background: #ccc; cursor: not-allowed; }
+
+  /* ---------- 进度条 ---------- */
+  #progressWrap {
+    display: none; margin-top: 14px;
+  }
+  .progress {
+    height: 4px; background: #eee; border-radius: 2px; overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%; width: 0; background: var(--accent);
+    transition: width .4s ease;
+  }
+  #progressMsg {
+    font-size: 12px; color: var(--muted);
+    text-align: center; margin-top: 6px;
+  }
+
+  /* ---------- 结果 ---------- */
+  #preview { margin-top: 20px; }
+  #preview img {
+    width: 100%; border-radius: 10px; display: block;
+    box-shadow: 0 4px 24px rgba(0,0,0,.1);
+    background: #f0ede6;
+  }
+  .meta {
+    margin-top: 14px; padding: 14px;
+    background: var(--card); border-radius: 10px;
+    font-size: 13px; line-height: 1.7; color: #555;
+    border: 1px solid var(--rule);
+  }
+  .meta b { color: var(--fg); }
+  .actions {
+    display: flex; gap: 10px; margin-top: 12px;
+  }
+  .actions a, .actions button {
+    flex: 1; padding: 12px;
+    text-align: center; text-decoration: none;
+    background: var(--card); color: var(--fg);
+    border: 1px solid #ddd; border-radius: 10px;
+    font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .actions a:active, .actions button:active {
+    background: #f5f5f5;
+  }
+
+  /* ---------- 错误提示 ---------- */
+  #error {
+    display: none; margin-top: 12px; padding: 12px 14px;
+    background: #fff2f0; color: #c0392b;
+    border: 1px solid #ffccc7; border-radius: 10px;
+    font-size: 13px; line-height: 1.6;
+  }
+
+  /* ---------- 安装提示 ---------- */
+  #installTip {
+    display: none; margin-top: 12px; padding: 12px 14px;
+    background: #fff7e6; color: #8a6d3b;
+    border: 1px solid #ffe58f; border-radius: 10px;
+    font-size: 13px; line-height: 1.6;
+  }
+  #installTip button {
+    margin-top: 8px; padding: 6px 14px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 6px;
+    font-size: 13px; cursor: pointer; font-family: inherit;
+  }
+
+  /* ---------- 登录页 ---------- */
+  #loginScreen {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--bg);
+    padding: 40px 24px;
+    padding-top: 18vh;
+    box-sizing: border-box;
+    overflow-y: auto;
+  }
+  .login-wrap { max-width: 360px; margin: 0 auto; }
+  .login-logo {
+    text-align: center; margin-bottom: 40px;
+  }
+  .login-logo .emoji {
+    font-size: 48px; line-height: 1; margin-bottom: 12px;
+  }
+  .login-logo h1 {
+    font-size: 22px; margin: 0; color: var(--fg);
+    letter-spacing: 2px; font-weight: 700;
+  }
+  .login-logo p {
+    font-size: 13px; color: var(--muted); margin: 8px 0 0;
+  }
+  .login-field { margin-bottom: 16px; }
+  .login-field label {
+    display: block; font-size: 13px; color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .login-field input {
+    width: 100%; padding: 14px;
+    font-size: 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    background: #fff; color: var(--fg);
+    font-family: inherit;
+  }
+  #loginError {
+    display: none;
+    color: #c0392b;
+    font-size: 13px;
+    margin-bottom: 12px;
+    text-align: center;
+    padding: 10px;
+    background: #fff2f0;
+    border-radius: 8px;
+  }
+  #loginBtn {
+    width: 100%; padding: 16px;
+    font-size: 17px; font-weight: 600; letter-spacing: 2px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: 12px;
+    cursor: pointer; font-family: inherit;
+    transition: opacity .2s;
+  }
+  #loginBtn:active { transform: scale(.98); }
+  #loginBtn:disabled { background: #ccc; cursor: not-allowed; }
+  .login-foot {
+    text-align: center; font-size: 12px; color: #bbb;
+    margin-top: 24px;
+  }
+
+  /* 主界面默认隐藏，登录后显示 */
+  #mainScreen { display: none; }
+
+  /* 顶栏右侧登出按钮 */
+  .logout-btn {
+    font-size: 12px; color: var(--muted);
+    background: none; border: 1px solid var(--rule);
+    padding: 4px 10px; border-radius: 12px;
+    cursor: pointer; font-family: inherit;
+    margin-left: 8px;
+  }
+  .logout-btn:active { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- 登录页                                                        -->
+<!-- ============================================================ -->
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-logo">
+      <div class="emoji">🎎</div>
+      <h1>ArtForge</h1>
+      <p>东方艺术生成工坊</p>
+    </div>
+
+    <div class="login-field">
+      <label>用户名</label>
+      <input id="loginUser" type="text" autocomplete="username"
+             placeholder="admin" value="admin">
+    </div>
+
+    <div class="login-field">
+      <label>密码</label>
+      <input id="loginPass" type="password" autocomplete="current-password"
+             placeholder="请输入密码">
+    </div>
+
+    <div id="loginError"></div>
+
+    <button id="loginBtn">登 录</button>
+
+    <p class="login-foot">ArtForge · 仅供本人使用</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 主界面（默认隐藏）                                            -->
+<!-- ============================================================ -->
+<div id="mainScreen">
+
+<header>
+  <h1>🎎 ArtForge</h1>
+  <div style="display:flex;align-items:center;">
+    <span id="status">就绪</span>
+    <button class="logout-btn" onclick="doLogout()">登出</button>
+  </div>
+</header>
+
+<main>
+  <!-- 安装提示 -->
+  <div id="installTip">
+    <b>💡 可以装成 App</b><br>
+    点浏览器菜单 → 「添加到主屏幕」
+    <button onclick="document.getElementById('installTip').style.display='none'">知道了</button>
+  </div>
+
+  <!-- 自定义 prompt 开关 -->
+  <div class="switch-row">
+    <span>使用自定义 Prompt</span>
+    <div class="switch">
+      <input type="checkbox" id="useCustom">
+      <label for="useCustom"></label>
+    </div>
+  </div>
+
+  <!-- 预设模式 -->
+  <div id="presetMode">
+    <div class="field">
+      <label>主题分类</label>
+      <select id="category"></select>
+    </div>
+    <div class="field">
+      <label>预设</label>
+      <select id="preset"></select>
+    </div>
+  </div>
+
+  <!-- 自定义 prompt -->
+  <div id="customMode" style="display:none">
+    <div class="field">
+      <label>自定义 Prompt</label>
+      <textarea id="customPrompt"
+                placeholder="例如：a young tengu warrior on a mountain peak, ukiyo-e woodblock print..."></textarea>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>引擎</label>
+    <select id="engine">
+      <option value="pollinations">Pollinations（免费，无需 Key）</option>
+      <option value="agnes">Agnes AI（需 Key）</option>
+      <option value="siliconflow">硅基流动（需 Key）</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>画幅</label>
+    <select id="composition">
+      <option value="vertical">立轴 9:16</option>
+      <option value="horizontal">横卷 16:9</option>
+      <option value="byobu">屏风 4:3</option>
+      <option value="fan">团扇 1:1</option>
+      <option value="album">册页 3:4</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>印章方案</label>
+    <select id="sealScheme">
+      <option value="contrast">对比鲜明（白文方 + 朱文长方）</option>
+      <option value="classic">传统经典（朱文方 + 朱文长方）</option>
+      <option value="luxury">华丽大气（双边框 + 长方 + 圆印）</option>
+      <option value="minimal">简洁（只有右下朱文方印）</option>
+    </select>
+  </div>
+
+  <div class="switch-row">
+    <span>装裱</span>
+    <div class="switch">
+      <input type="checkbox" id="use_scroll" checked>
+      <label for="use_scroll"></label>
+    </div>
+  </div>
+  <div class="switch-row">
+    <span>做旧</span>
+    <div class="switch">
+      <input type="checkbox" id="use_aging" checked>
+      <label for="use_aging"></label>
+    </div>
+  </div>
+  <div class="switch-row">
+    <span>题词</span>
+    <div class="switch">
+      <input type="checkbox" id="use_inscription" checked>
+      <label for="use_inscription"></label>
+    </div>
+  </div>
+  <div class="switch-row">
+    <span>印章</span>
+    <div class="switch">
+      <input type="checkbox" id="use_seal" checked>
+      <label for="use_seal"></label>
+    </div>
+  </div>
+  <div class="switch-row">
+    <span>水印</span>
+    <div class="switch">
+      <input type="checkbox" id="use_watermark" checked>
+      <label for="use_watermark"></label>
+    </div>
+  </div>
+
+  <button class="btn" id="genBtn">开始创作</button>
+
+  <div id="progressWrap">
+    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+    <div id="progressMsg">准备中…</div>
+  </div>
+
+  <div id="error"></div>
+  <div id="preview"></div>
+</main>
+
+</div><!-- /mainScreen -->
+
+<script>
+'use strict';
+
+const $ = (s) => document.querySelector(s);
+let currentTaskId = null;
+let pollTimer = null;
+
+// ============================================================
+// 认证逻辑
+// ============================================================
+
+const AUTH_KEY = 'artforge_auth';   // localStorage 里的键
+
+function getAuth() {
+  return localStorage.getItem(AUTH_KEY) || '';
+}
+
+function setAuth(user, pass) {
+  // HTTP Basic: "Basic " + base64("user:pass")
+  // btoa 只支持 Latin-1，用 encodeURIComponent 处理中文/特殊字符
+  const raw = user + ':' + pass;
+  const encoded = btoa(unescape(encodeURIComponent(raw)));
+  localStorage.setItem(AUTH_KEY, 'Basic ' + encoded);
+}
+
+function clearAuth() {
+  localStorage.removeItem(AUTH_KEY);
+}
+
+// 带认证的 fetch（替代普通 fetch）
+async function authFetch(url, opts = {}) {
+  opts.headers = opts.headers || {};
+  const auth = getAuth();
+  if (auth) {
+    opts.headers['Authorization'] = auth;
+  }
+  const r = await fetch(url, opts);
+  if (r.status === 401) {
+    // 认证失效 → 清理 → 显示登录页
+    clearAuth();
+    showLogin();
+    const err = new Error('认证失效，请重新登录');
+    err.__auth_failed = true;
+    throw err;
+  }
+  return r;
+}
+
+function showLogin() {
+  $('#loginScreen').style.display = 'block';
+  $('#mainScreen').style.display = 'none';
+}
+
+function showMain() {
+  $('#loginScreen').style.display = 'none';
+  $('#mainScreen').style.display = 'block';
+}
+
+// 尝试用给定账号密码登录
+async function tryLogin(user, pass) {
+  // 临时写入，供 fetch 用
+  setAuth(user, pass);
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': getAuth(),
+      },
+      body: JSON.stringify({ username: user, password: pass }),
+    });
+    if (r.ok) {
+      return true;
+    }
+    clearAuth();
+    return false;
+  } catch (e) {
+    clearAuth();
+    return false;
+  }
+}
+
+// 登出
+function doLogout() {
+  if (!confirm('确定要登出吗？')) return;
+  clearAuth();
+  currentTaskId = null;
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+  showLogin();
+  // 清空密码框
+  const el = $('#loginPass');
+  if (el) el.value = '';
+}
+
+// ============================================================
+// 业务逻辑
+// ============================================================
+
+// 加载预设
+async function loadPresets() {
+  try {
+    const r = await authFetch('/api/presets');
+    const data = await r.json();
+    const cats = Object.keys(data);
+    if (!cats.length) throw new Error('无预设');
+
+    $('#category').innerHTML = cats
+      .map(c => `<option value="${c}">${c}</option>`).join('');
+    updatePresets(data);
+    $('#category').onchange = () => updatePresets(data);
+
+    window._presetsData = data;
+  } catch (e) {
+    if (e.__auth_failed) return;   // 401 已处理
+    console.error(e);
+    $('#status').textContent = '预设加载失败';
+  }
+}
+
+function updatePresets(data) {
+  const cat = $('#category').value;
+  const list = data[cat] || [];
+  $('#preset').innerHTML = list
+    .map(p => `<option value="${p}">${p}</option>`).join('');
+}
+
+// 自定义 prompt 切换
+$('#useCustom').onchange = (e) => {
+  const on = e.target.checked;
+  $('#presetMode').style.display = on ? 'none' : '';
+  $('#customMode').style.display = on ? '' : 'none';
+};
+
+// 生成
+$('#genBtn').onclick = async () => {
+  if (currentTaskId) return;
+
+  $('#genBtn').disabled = true;
+  $('#genBtn').textContent = '生成中…';
+  $('#status').textContent = '生成中…';
+  $('#error').style.display = 'none';
+  $('#preview').innerHTML = '';
+  $('#progressWrap').style.display = 'block';
+  $('#progressBar').style.width = '0%';
+  $('#progressMsg').textContent = '提交任务…';
+
+  const useCustom = $('#useCustom').checked;
+
+  const body = {
+    category: $('#category').value,
+    engine: $('#engine').value,
+    composition: $('#composition').value,
+    seal_scheme: $('#sealScheme').value,
+    use_scroll: $('#use_scroll').checked,
+    use_aging: $('#use_aging').checked,
+    use_inscription: $('#use_inscription').checked,
+    use_seal: $('#use_seal').checked,
+    use_watermark: $('#use_watermark').checked,
+  };
+
+  if (useCustom) {
+    body.custom_prompt = $('#customPrompt').value.trim();
+    if (!body.custom_prompt) {
+      alert('请输入自定义 Prompt');
+      resetBtn();
+      return;
+    }
+  } else {
+    body.preset = $('#preset').value;
+    if (!body.preset) {
+      alert('请选择预设');
+      resetBtn();
+      return;
+    }
+  }
+
+  try {
+    const r = await authFetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const { task_id } = await r.json();
+    currentTaskId = task_id;
+    pollTask(task_id);
+  } catch (e) {
+    if (e.__auth_failed) return;
+    showError('提交失败: ' + e.message);
+    resetBtn();
+  }
+};
+
+function pollTask(taskId) {
+  let lastProgress = 0;
+  pollTimer = setInterval(async () => {
+    try {
+      const r = await authFetch(`/api/task/${taskId}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const s = await r.json();
+
+      if (s.progress > lastProgress) {
+        lastProgress = s.progress;
+        $('#progressBar').style.width = s.progress + '%';
+      }
+      if (s.message) $('#progressMsg').textContent = s.message;
+
+      if (s.status === 'done') {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        showResult(taskId, s.result);
+        resetBtn();
+      } else if (s.status === 'error') {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        showError(s.error || '未知错误');
+        resetBtn();
+      }
+    } catch (e) {
+      if (e.__auth_failed) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+        return;
+      }
+      console.warn('poll error', e);
+    }
+  }, 900);
+}
+
+function showResult(taskId, meta) {
+  $('#status').textContent = '完成 ✓';
+  $('#progressBar').style.width = '100%';
+  $('#progressMsg').textContent = '完成';
+
+  // 图片需要带认证头，用 blob URL 显示
+  const imgApi = `/api/image/${taskId}?t=${Date.now()}`;
+
+  $('#preview').innerHTML = `
+    <img id="resultImg" src="" alt="作品">
+    <div class="meta">
+      <div><b>主题</b>：${escapeHtml(meta.theme || '通用')}</div>
+      <div><b>预设</b>：${escapeHtml(meta.preset)}</div>
+      <div><b>尺寸</b>：${meta.width} × ${meta.height}</div>
+      ${meta.inscription ? `<div><b>题词</b>：${escapeHtml(meta.inscription)}</div>` : ''}
+    </div>
+    <div class="actions">
+      <a id="downloadBtn" href="#" download="artforge_${meta.preset}_${taskId.slice(0,8)}.png">下载原图</a>
+      <button id="shareBtn">分享</button>
+    </div>
+  `;
+
+  // 加载图片（带 Authorization）
+  (async () => {
+    try {
+      const r = await authFetch(imgApi);
+      const blob = await r.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const img = $('#resultImg');
+      img.src = objUrl;
+      const dl = $('#downloadBtn');
+      dl.href = objUrl;
+      $('#shareBtn').onclick = () => shareImg(objUrl);
+    } catch (e) {
+      if (!e.__auth_failed) {
+        showError('图片加载失败: ' + e.message);
+      }
+    }
+  })();
+
+  setTimeout(() => {
+    $('#preview').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 200);
+}
+
+function resetBtn() {
+  currentTaskId = null;
+  $('#genBtn').disabled = false;
+  $('#genBtn').textContent = '开始创作';
+}
+
+function showError(msg) {
+  const el = $('#error');
+  el.textContent = '❌ ' + msg;
+  el.style.display = 'block';
+  $('#status').textContent = '失败';
+}
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// 分享
+async function shareImg(url) {
+  try {
+    const blob = await fetch(url).then(r => r.blob());
+    const file = new File([blob], 'artforge.png', { type: 'image/png' });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        files: [file],
+        title: 'ArtForge 作品',
+        text: '由 ArtForge 生成',
+      });
+    } else {
+      alert('当前浏览器不支持系统分享，请点「下载原图」后手动分享');
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      alert('分享失败：' + e.message);
+    }
+  }
+}
+
+// 注册 Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(
+      (reg) => console.log('SW 注册成功:', reg.scope),
+      (err) => console.warn('SW 注册失败:', err),
+    );
+  });
+}
+
+// 安装提示
+function checkInstallTip() {
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+  if (!isStandalone) {
+    setTimeout(() => {
+      $('#installTip').style.display = 'block';
+    }, 3000);
+  }
+}
+
+// ============================================================
+// 登录按钮 + 启动逻辑
+// ============================================================
+
+$('#loginBtn').onclick = async () => {
+  const user = $('#loginUser').value.trim();
+  const pass = $('#loginPass').value;
+  const err = $('#loginError');
+  const btn = $('#loginBtn');
+
+  if (!user || !pass) {
+    err.textContent = '请输入用户名和密码';
+    err.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '登录中…';
+  err.style.display = 'none';
+
+  const ok = await tryLogin(user, pass);
+  if (ok) {
+    showMain();
+    // 主界面初始化
+    loadPresets();
+    checkInstallTip();
+  } else {
+    err.textContent = '用户名或密码错误';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = '登 录';
+  }
+};
+
+// 回车提交
+$('#loginPass').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('#loginBtn').click();
+});
+$('#loginUser').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('#loginPass').focus();
+});
+
+// 启动：检查是否已登录
+(async function initAuth() {
+  const auth = getAuth();
+  if (!auth) {
+    showLogin();
+    return;
+  }
+  // 试探一下 auth 是否还有效
+  try {
+    const r = await fetch('/api/presets', {
+      headers: { 'Authorization': auth },
+    });
+    if (r.status === 401) {
+      clearAuth();
+      showLogin();
+    } else if (r.ok) {
+      showMain();
+      loadPresets();
+      checkInstallTip();
+    } else {
+      // 其他错误 → 也显示登录页（后端可能挂了）
+      showLogin();
+    }
+  } catch (e) {
+    // 网络问题 → 显示登录页
+    showLogin();
+  }
+})();
+
+</script>
+</body>
+</html>
