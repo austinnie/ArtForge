@@ -550,11 +550,18 @@ class ArtForgeDaily:
             if not list(image_dir.glob("*.png")):
                 return {"status": "error", "error": "没有生成任何图片"}
 
-            # 2. 鉴赏
-            md = self.curate(image_dir, title=title)
+            # 2. 鉴赏（先不传 title，让它自动生成 intro）
+            md = self.curate(image_dir, title=None)  # ← 改成 None
             if not md:
                 return {"status": "error", "error": "鉴赏失败", "result": result}
             result["md_path"] = str(md)
+            
+            # 🌟 2.5 智能生成标题
+            smart_title = self._generate_smart_title(md, category, presets)
+            if smart_title:
+                # 更新 metadata 和文章
+                self._update_article_title(md, smart_title)
+                logger.info(f"🎯 智能标题: {smart_title}")
 
             # 3. 排版
             art_dir = self.format(md, theme, footer_image=footer_image)
@@ -611,6 +618,116 @@ class ArtForgeDaily:
             return {"status": "error", "error": str(e), "result": result}
 
 
+    def _generate_smart_title(self, md_path: Path, category: str, presets: list) -> Optional[str]:
+        """根据鉴赏内容智能生成标题"""
+        try:
+            # 读取 metadata
+            article_dir = md_path.parent
+            metadata_file = article_dir / "metadata.json"
+            if not metadata_file.exists():
+                return None
+            
+            metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+            intro = metadata.get("intro", "")
+            title = metadata.get("title", "")
+            
+            if not intro:
+                return None
+            
+            # 用 LLM 生成标题
+            from api_engines import create_engine
+            from config.settings import settings
+            
+            engine = create_engine("agnes", {
+                "AGNES_API_KEY": settings.agnes_api_key,
+                "AGNES_BASE_URL": settings.agnes_base_url,
+                "AGNES_TEXT_MODEL": settings.agnes_text_model or "agnes-2.5-flash",
+            })
+            
+            prompt = f"""你是一位资深的艺术编辑，请根据以下鉴赏文章的引言，生成一个诗意且贴切的标题。
+
+要求：
+1. 标题长度：8-15 个字
+2. 风格：优雅、含蓄、有东方韵味
+3. 可以包含意象（如：月、风、花、云、山、水等）
+4. 不要直接重复引言内容，要提炼升华
+5. 只输出标题，不要任何解释
+
+分类：{category}
+预设：{', '.join(presets)}
+引言：{intro}
+
+请生成标题："""
+            
+            result = engine.chat_simple(prompt)
+            smart_title = result.strip()
+            
+            # 清理：去掉可能的引号、换行
+            smart_title = smart_title.strip('"').strip("'").strip("「」").strip()
+            
+            # 验证长度
+            if 4 <= len(smart_title) <= 20:
+                return smart_title
+            else:
+                logger.warning(f"⚠️ 生成的标题长度不合适: {smart_title}")
+                return None
+                
+        except Exception as e:
+            logger.warning(f"⚠️ 智能标题生成失败: {e}")
+            return None
+    
+    def _update_article_title(self, md_path: Path, new_title: str):
+        """更新文章标题（metadata + markdown + html）"""
+        try:
+            article_dir = md_path.parent
+            metadata_file = article_dir / "metadata.json"
+            
+            # 1. 更新 metadata
+            if metadata_file.exists():
+                metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+                metadata["title"] = new_title
+                metadata_file.write_text(
+                    json.dumps(metadata, ensure_ascii=False, indent=2),
+                    encoding="utf-8"
+                )
+            
+            # 2. 更新 markdown
+            if md_path.exists():
+                content = md_path.read_text(encoding="utf-8")
+                # 替换第一行标题（# 开头的）
+                lines = content.split("\n")
+                for i, line in enumerate(lines):
+                    if line.startswith("# "):
+                        lines[i] = f"# {new_title}"
+                        break
+                md_path.write_text("\n".join(lines), encoding="utf-8")
+            
+            # 3. 更新 html（如果存在）
+            html_path = article_dir / "article.html"
+            if html_path.exists():
+                content = html_path.read_text(encoding="utf-8")
+                # 替换 <title> 和 <h1>
+                import re
+                content = re.sub(r'<title>.*?</title>', f'<title>{new_title}</title>', content)
+                content = re.sub(r'<h1>.*?</h1>', f'<h1>{new_title}</h1>', content)
+                html_path.write_text(content, encoding="utf-8")
+            
+            # 4. 重命名目录（可选）
+            # 当前目录名格式：20260927_154830_东方艺术  2026-09-27
+            # 改成：20260927_154830_新标题
+            old_name = article_dir.name
+            parts = old_name.split("_", 2)
+            if len(parts) >= 3:
+                new_name = f"{parts[0]}_{parts[1]}_{new_title}"
+                new_path = article_dir.parent / new_name
+                if not new_path.exists():
+                    article_dir.rename(new_path)
+                    # 更新 result 里的路径
+                    logger.info(f"📁 目录已重命名: {old_name} → {new_name}")
+                    
+        except Exception as e:
+            logger.warning(f"⚠️ 更新标题失败: {e}")
+            
 # ============================================================
 # CLI
 # ============================================================
