@@ -102,7 +102,7 @@ def task_artforge_daily(args, logger) -> bool:
         "--theme", "terracotta",
         "--footer-image", "assets/qr/公众号结束处.png",
     ]
-    
+        
     if args.skip_video:
         cmd.append("--no-video")
     if args.skip_newspic:
