@@ -418,60 +418,170 @@ class ArtForgeDaily:
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
+    def _generate_bgm(self, category: str, duration: int = 24) -> Optional[Path]:
+        """根据分类自动生成匹配的背景音乐"""
+        try:
+            # 分类 → 情绪映射
+            EMOTION_MAP = {
+                "tang": "epic", "genji": "epic", "dynasty": "epic",
+                "japanese": "mysterious", "yokai": "mysterious", 
+                "yokai_legend": "mysterious", "yokai_animals": "mysterious",
+                "gufeng": "peaceful", "landscape": "peaceful", "mountain": "peaceful",
+                "water": "peaceful", "tree": "peaceful", "flower": "joyful",
+                "bird": "joyful", "cat": "joyful", "dog": "joyful",
+                "fish": "joyful", "insect": "joyful",
+                "tea_ceremony": "melancholic", "calligraphy": "melancholic",
+                "incense": "melancholic", "literati_gathering": "melancholic",
+                "season": "peaceful", "festival": "joyful", "weather": "peaceful",
+                "buddhism": "peaceful", "folklore": "mysterious",
+            }
+            
+            # 分类 → 编曲风格映射
+            ARRANGEMENT_MAP = {
+                "tang": "chinese", "genji": "chamber", "dynasty": "chinese",
+                "japanese": "baroque", "yokai": "epic",
+                "gufeng": "chinese", "landscape": "new_age", "mountain": "new_age",
+                "flower": "folk", "bird": "folk", "cat": "folk",
+                "tea_ceremony": "chamber", "calligraphy": "chamber",
+                "season": "new_age", "festival": "folk",
+            }
+            
+            emotion = EMOTION_MAP.get(category, "peaceful")
+            arrangement = ARRANGEMENT_MAP.get(category, "new_age")
+            
+            logger.info(f"🎵 自动生成 BGM: 情绪={emotion}, 编曲={arrangement}, 时长={duration}s")
+            
+            # 调用 music_generator
+            from skills.music_generator.music_generator_cli import MusicGenerator
+            gen = MusicGenerator()
+            result = gen.create_music(
+                topic=f"东方艺术 {category}",
+                emotion=emotion,
+                duration=duration,
+            )
+            
+            if result["status"] == "success":
+                bgm_path = Path(result["audio_file"])
+                logger.info(f"✅ BGM 已生成: {bgm_path.name}")
+                return bgm_path
+            else:
+                logger.warning(f"⚠️ BGM 生成失败: {result.get('message')}")
+                return None
+                
+        except Exception as e:
+            logger.warning(f"⚠️ 自动生成 BGM 异常: {e}")
+            return None
+            
     # ---------- 步骤 6：合成视频 + 推视频号 ----------
-    def build_video(self, image_dir: Path, title: str, per_image: float = 4.0,
-                    size: str = "1080x1920", bgm: Optional[Path] = None) -> Optional[Path]:
-        import shutil
-        import subprocess
+    def build_video(self, image_dir: Path, title: str, 
+                    per_image: float = 4.0,
+                    size: str = "1080x1920", 
+                    bgm: Optional[Path] = None,
+                    category: str = None) -> Optional[Path]:
+        """合成视频（自动匹配 BGM）"""
+        import shutil, subprocess
+        
         ffmpeg = shutil.which("ffmpeg")
         if not ffmpeg:
             logger.error("未找到 ffmpeg")
             return None
+            
         imgs = sorted([
             p for p in image_dir.iterdir()
             if p.suffix.lower() in (".png", ".jpg", ".jpeg")
         ])
         if not imgs:
             return None
+            
+        #  智能音乐选择逻辑
+        final_bgm = None
+        
+        # 1. 第一优先级：用户手动指定的 bgm
+        if bgm and Path(bgm).exists():
+            final_bgm = Path(bgm)
+            logger.info(f"🎵 使用手动指定的背景音乐: {final_bgm.name}")
+            
+        # 2. 第二优先级：尝试自动生成（如果传了 category）
+        elif category:
+            logger.info("🎵 尝试自动生成背景音乐...")
+            final_bgm = self._generate_bgm(category, duration=int(len(imgs) * per_image))
+            if final_bgm:
+                logger.info(f"✅ 自动生成成功: {final_bgm.name}")
+                
+        # 3. 第三优先级（兜底）：从 assets/music 随机选一个
+        if not final_bgm:
+            music_dir = PROJECT_ROOT / "assets" / "music"
+            if music_dir.exists():
+                mp3_files = list(music_dir.glob("*.mp3"))
+                if mp3_files:
+                    final_bgm = random.choice(mp3_files)
+                    logger.info(f"🎲 自动生成失败/未配置，随机兜底选择: {final_bgm.name}")
+                    
+            
         W, H = map(int, size.split("x"))
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe = "".join(c for c in title[:20] if c.isalnum() or c in " _-").strip() or "video"
         out = PROJECT_ROOT / "output" / "videos" / f"{ts}_{safe}.mp4"
         out.parent.mkdir(parents=True, exist_ok=True)
+        
         import tempfile
         work = Path(tempfile.mkdtemp(prefix="af_video_"))
+        
         try:
+            # 生成每张图片的短视频片段
             segs = []
             for i, img in enumerate(imgs):
                 seg = work / f"seg_{i:03d}.mp4"
                 vf = (
                     f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
                     f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=black,"
-                    f"setsar=1,format=yuv420p")
+                    f"setsar=1,format=yuv420p"
+                )
                 subprocess.run([
                     ffmpeg, "-y", "-loop", "1", "-t", str(per_image), "-i", str(img),
                     "-vf", vf, "-r", "30", "-c:v", "libx264", "-preset", "medium",
                     "-crf", "20", "-pix_fmt", "yuv420p", str(seg),
                 ], capture_output=True, check=True)
                 segs.append(seg)
+                
+            # 合并视频片段
             concat = work / "concat.txt"
             concat.write_text("\n".join(f"file '{s.as_posix()}'" for s in segs), encoding="utf-8")
-            merged = work / "merged.mp4"
+            merged_no_audio = work / "merged_no_audio.mp4"
             subprocess.run([
                 ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", str(concat),
-                "-c", "copy", str(merged),
+                "-c", "copy", str(merged_no_audio),
             ], capture_output=True, check=True)
+            
+            #  混入音乐
             if bgm and bgm.exists():
+                final_out = work / "final.mp4"
+                total_duration = len(imgs) * per_image
+                
                 subprocess.run([
-                    ffmpeg, "-y", "-i", str(merged), "-stream_loop", "-1", "-i", str(bgm),
-                    "-shortest", "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", str(out),
+                    ffmpeg, "-y",
+                    "-i", str(merged_no_audio),
+                    "-stream_loop", "-1", "-i", str(bgm),  # 音乐循环
+                    "-t", str(total_duration),             # 强制总时长
+                    "-c:v", "copy",
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-map", "0:v:0", "-map", "1:a:0",
+                    str(final_out),
                 ], capture_output=True, check=True)
+                
+                shutil.move(str(final_out), str(out))
+                logger.info(f"🎵 已混入 BGM: {bgm.name}")
             else:
-                shutil.copy2(merged, out)
+                shutil.move(str(merged_no_audio), str(out))
+                
             return out
+            
+        except Exception as e:
+            logger.error(f"视频合成失败: {e}")
+            return None
         finally:
             shutil.rmtree(work, ignore_errors=True)
-
+            
     def push_video(self, video_path: Path, title: str, desc: str = "",
                    cover: Optional[Path] = None, account: str = "test") -> Dict:
         try:
@@ -588,7 +698,26 @@ class ArtForgeDaily:
             # 5. 推贴图
             if push_newspic_flag:
                 np_title = (title or f"{category} · {datetime.now().strftime('%m-%d')}")[:20]
-                result["push_newspic"] = self.push_newspic(image_dir, np_title)
+
+                # 🌟 新增：读取鉴赏文章的 intro 作为贴图内容
+                np_content = ""
+                if md and md.parent.exists():
+                    meta_file = md.parent / "metadata.json"
+                    if meta_file.exists():
+                        try:
+                            import json
+                            meta = json.loads(meta_file.read_text(encoding="utf-8"))
+                            np_content = meta.get("intro", "")[:200] # 取前200字
+                        except:
+                            pass
+                
+                # 如果没读到 intro，就用分类名兜底
+                if not np_content:              
+                    np_content = f"东方艺术 · {category} 主题鉴赏"
+
+                # 传入 content 参数
+                result["push_newspic"] = self.push_newspic(image_dir, np_title, content=np_content)
+
 
             # 6. 视频
             if push_video_flag:
@@ -596,12 +725,21 @@ class ArtForgeDaily:
                 bgm_path = Path(bgm) if bgm else None
                 if bgm_path and not bgm_path.is_absolute():
                     bgm_path = PROJECT_ROOT / bgm_path
-                video = self.build_video(image_dir, v_title, bgm=bgm_path)
+                
+                # 🎵 传入 category 让 build_video 能自动生成 BGM
+                video = self.build_video(
+                    image_dir, v_title, 
+                    per_image=4.0,  # 每张 4 秒
+                    bgm=bgm_path,
+                    category=category,  # ← 新增！
+                )
+                
                 if video:
                     result["video_path"] = str(video)
                     cover = next(image_dir.glob("*.png"), None)
                     result["push_video"] = self.push_video(
-                        video, v_title, desc=v_title, cover=cover, account=video_account)
+                        video, v_title, desc=v_title, 
+                        cover=cover, account=video_account)
 
             # 7. 记录历史（用于防重复）
             if use_smart:
