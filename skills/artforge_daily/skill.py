@@ -473,14 +473,12 @@ class ArtForgeDaily:
             return None
             
     # ---------- 步骤 6：合成视频 + 推视频号 ----------
-    def build_video(self, image_dir: Path, title: str, 
-                    per_image: float = 4.0,
-                    size: str = "1080x1920", 
-                    bgm: Optional[Path] = None,
-                    category: str = None) -> Optional[Path]:
-        """合成视频（自动匹配 BGM）"""
-        import shutil, subprocess
-        
+    def build_video(self, image_dir: Path, title: str, per_image: float = 4.0,
+                    size: str = "1080x1920", bgm: Optional[Path] = None) -> Optional[Path]:
+        import shutil
+        import subprocess
+        import random
+
         ffmpeg = shutil.which("ffmpeg")
         if not ffmpeg:
             logger.error("未找到 ffmpeg")
@@ -492,32 +490,23 @@ class ArtForgeDaily:
         ])
         if not imgs:
             return None
-            
-        #  智能音乐选择逻辑
+
+        #  智能音乐选择逻辑（解决冲突 + 无声问题）
         final_bgm = None
         
-        # 1. 第一优先级：用户手动指定的 bgm
+        # 1. 优先使用手动指定的 bgm
         if bgm and Path(bgm).exists():
             final_bgm = Path(bgm)
-            logger.info(f"🎵 使用手动指定的背景音乐: {final_bgm.name}")
-            
-        # 2. 第二优先级：尝试自动生成（如果传了 category）
-        elif category:
-            logger.info("🎵 尝试自动生成背景音乐...")
-            final_bgm = self._generate_bgm(category, duration=int(len(imgs) * per_image))
-            if final_bgm:
-                logger.info(f"✅ 自动生成成功: {final_bgm.name}")
-                
-        # 3. 第三优先级（兜底）：从 assets/music 随机选一个
-        if not final_bgm:
+            logger.info(f"🎵 使用指定背景音乐: {final_bgm.name}")
+        else:
+            # 2. 兜底：从 assets/music 随机选一个 MP3
             music_dir = PROJECT_ROOT / "assets" / "music"
             if music_dir.exists():
                 mp3_files = list(music_dir.glob("*.mp3"))
                 if mp3_files:
                     final_bgm = random.choice(mp3_files)
-                    logger.info(f"🎲 自动生成失败/未配置，随机兜底选择: {final_bgm.name}")
-                    
-            
+                    logger.info(f" 随机选择背景音乐: {final_bgm.name}")
+
         W, H = map(int, size.split("x"))
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe = "".join(c for c in title[:20] if c.isalnum() or c in " _-").strip() or "video"
@@ -528,15 +517,13 @@ class ArtForgeDaily:
         work = Path(tempfile.mkdtemp(prefix="af_video_"))
         
         try:
-            # 生成每张图片的短视频片段
             segs = []
             for i, img in enumerate(imgs):
                 seg = work / f"seg_{i:03d}.mp4"
                 vf = (
                     f"scale={W}:{H}:force_original_aspect_ratio=decrease,"
                     f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=black,"
-                    f"setsar=1,format=yuv420p"
-                )
+                    f"setsar=1,format=yuv420p")
                 subprocess.run([
                     ffmpeg, "-y", "-loop", "1", "-t", str(per_image), "-i", str(img),
                     "-vf", vf, "-r", "30", "-c:v", "libx264", "-preset", "medium",
@@ -544,41 +531,27 @@ class ArtForgeDaily:
                 ], capture_output=True, check=True)
                 segs.append(seg)
                 
-            # 合并视频片段
             concat = work / "concat.txt"
             concat.write_text("\n".join(f"file '{s.as_posix()}'" for s in segs), encoding="utf-8")
-            merged_no_audio = work / "merged_no_audio.mp4"
+            merged = work / "merged.mp4"
             subprocess.run([
                 ffmpeg, "-y", "-f", "concat", "-safe", "0", "-i", str(concat),
-                "-c", "copy", str(merged_no_audio),
+                "-c", "copy", str(merged),
             ], capture_output=True, check=True)
             
-            #  混入音乐
-            if bgm and bgm.exists():
-                final_out = work / "final.mp4"
-                total_duration = len(imgs) * per_image
-                
+            # 🎵 混入音乐
+            if final_bgm and final_bgm.exists():
                 subprocess.run([
-                    ffmpeg, "-y",
-                    "-i", str(merged_no_audio),
-                    "-stream_loop", "-1", "-i", str(bgm),  # 音乐循环
-                    "-t", str(total_duration),             # 强制总时长
-                    "-c:v", "copy",
-                    "-c:a", "aac", "-b:a", "128k",
-                    "-map", "0:v:0", "-map", "1:a:0",
-                    str(final_out),
+                    ffmpeg, "-y", "-i", str(merged), "-stream_loop", "-1", "-i", str(final_bgm),
+                    "-shortest",  # 关键：以最短的流（视频）为准，自动截断长音乐
+                    "-c:v", "copy", "-c:a", "aac", "-b:a", "128k", str(out),
                 ], capture_output=True, check=True)
-                
-                shutil.move(str(final_out), str(out))
-                logger.info(f"🎵 已混入 BGM: {bgm.name}")
+                logger.info(f"✅ 视频已添加音乐: {final_bgm.name}")
             else:
-                shutil.move(str(merged_no_audio), str(out))
+                shutil.copy2(merged, out)
+                logger.warning("⚠️ 未找到背景音乐，视频无声")
                 
             return out
-            
-        except Exception as e:
-            logger.error(f"视频合成失败: {e}")
-            return None
         finally:
             shutil.rmtree(work, ignore_errors=True)
             
@@ -730,8 +703,7 @@ class ArtForgeDaily:
                 video = self.build_video(
                     image_dir, v_title, 
                     per_image=4.0,  # 每张 4 秒
-                    bgm=bgm_path,
-                    category=category,  # ← 新增！
+                    bgm=bgm_path,                    
                 )
                 
                 if video:
