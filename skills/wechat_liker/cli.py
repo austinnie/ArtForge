@@ -3,13 +3,9 @@ import argparse
 import sys
 from pathlib import Path
 
-# 确保能导入 skill (兼容从任何目录调用此脚本)
-CURRENT_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = CURRENT_DIR.parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
-
+# 确保能导入 skill
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from skills.wechat_liker.skill import WechatLiker
-
 
 def main():
     parser = argparse.ArgumentParser(description="微信公众号文章自动点赞工具")
@@ -36,11 +32,10 @@ def main():
             urls.extend([line.strip() for line in f if line.strip().startswith("http")])
 
     if not urls:
-        print("⚠️ 未找到有效的链接")
+        print(" 未找到有效的链接")
         return
 
     liker.batch_like(urls, action=args.action)
-
 
 if __name__ == "__main__":
     main()
