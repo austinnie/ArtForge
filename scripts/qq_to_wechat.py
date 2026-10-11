@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
 QQ空间日志 -> 微信公众号草稿箱 一体化工具
@@ -97,7 +97,7 @@ class WeChatAPI:
         plain = re.sub(r"<[^>]+>", "", content_html)
         plain = re.sub(r"\s+", " ", plain).strip()
         digest = plain[:100] + ("..." if len(plain) > 100 else "")
-        art = {"title": (title or "无标题")[:64], "author": "QQ空间迁移",
+        art = {"title": (title or "无标题")[:64], "author": "",
                "digest": digest, "content": content_html,
                "content_source_url": "", "need_open_comment": 0,
                "only_fans_can_comment": 0}
@@ -106,9 +106,15 @@ class WeChatAPI:
             r = requests.post(url, json={"articles": [art]}, timeout=30).json()
         except Exception as e:
             print(f"      ❌ 请求异常: {e}"); return False
+        # 成功：微信返回 media_id，不返回 errcode
+        if "media_id" in r:
+            print(f"      ✅ 草稿创建成功 (media_id: {r['media_id'][:20]}...)")
+            return True
         if r.get("errcode") == 0:
-            print("      ✅ 草稿创建成功"); return True
-        print(f"      ❌ 创建失败: {r}"); return False
+            print("      ✅ 草稿创建成功")
+            return True
+        print(f"      ❌ 创建失败: {r}")
+        return False
 
 
 # ============================================================
@@ -370,36 +376,121 @@ def process_images(html: str, wx, referer: str, dry: bool):
 # ============================================================
 def cmd_fetch(args):
     if not QQ_UIN or not QQ_COOKIE or not QQ_START_BLOGID:
-        print("❌ .env 里缺 QQ_UIN / QQ_COOKIE / QQ_START_BLOGID"); return False
-    fetcher = QzoneBlogFetcher(QQ_UIN, QQ_COOKIE, QQ_G_TK)
-    ids = fetcher.fetch_all_blogids(QQ_START_BLOGID)
-    if not ids:
-        print("❌ 没拿到 blogId"); return False
+        print("❌ .env 里缺 QQ_UIN / QQ_COOKIE / QQ_START_BLOGID")
+        return False
 
-    print(f"\n📥 开始抓正文（共 {len(ids)} 篇）...")
+    # ========= 多锚点：从多个起点分别翻页，合并去重 =========
+    starts = [QQ_START_BLOGID.strip()]
+
+    # 从 .env 读追加锚点，逗号分隔
+    extra = (os.getenv("QQ_EXTRA_STARTS", "") or "").strip()
+    if extra:
+        extra_list = [s.strip() for s in extra.split(",") if s.strip()]
+        starts += extra_list
+
+    # 去重（防止 .env 里重复写）
+    seen_starts = set()
+    starts_uniq = []
+    for s in starts:
+        if s and s not in seen_starts:
+            seen_starts.add(s)
+            starts_uniq.append(s)
+    starts = starts_uniq
+
+    print(f"\n📋 共 {len(starts)} 个锚点：")
+    for i, s in enumerate(starts, 1):
+        print(f"   {i}. {s}")
+
+    fetcher = QzoneBlogFetcher(QQ_UIN, QQ_COOKIE, QQ_G_TK)
+
+    all_ids = []
+    seen_ids = set()
+    for i, st in enumerate(starts, 1):
+        print(f"\n===== 锚点 {i}/{len(starts)}: blogid={st} =====")
+        try:
+            ids = fetcher.fetch_all_blogids(st)
+        except Exception as e:
+            print(f"   ❌ 抓取异常: {e}")
+            continue
+        new = [x for x in ids if x not in seen_ids]
+        for x in new:
+            seen_ids.add(x)
+            all_ids.append(x)
+        print(f"   ✅ 新增 {len(new)}，累计 {len(all_ids)}")
+
+    if not all_ids:
+        print("❌ 没拿到 blogId")
+        return False
+
+    # 按 blogid 降序（最新的在前）
+    all_ids = sorted(set(all_ids), key=lambda x: int(x), reverse=True)
+    print(f"\n✅ 去重排序后共 {len(all_ids)} 个 blogId")
+
+    print(f"\n📥 开始抓正文（共 {len(all_ids)} 篇）...")
     posts = []
-    for i, bid in enumerate(ids, 1):
-        print(f"[{i}/{len(ids)}] blogid={bid}")
+    for i, bid in enumerate(all_ids, 1):
+        print(f"[{i}/{len(all_ids)}] blogid={bid}")
         d = fetcher.fetch_blog_detail(bid)
         if d.get("_error"):
-            print(f"   ❌ {d['_error']}"); continue
+            print(f"   ❌ {d['_error']}")
+            continue
         if len(re.sub(r"<[^>]+>", "", d["content"])) < 10:
-            print("   ⚠️ 正文过短，跳过"); continue
-        posts.append({"title": d["title"], "content": d["content"],
-                      "url": d["url"], "blogid": bid})
+            print("   ⚠️ 正文过短，跳过")
+            continue
+        posts.append({
+            "title": d["title"],
+            "content": d["content"],
+            "url": d["url"],
+            "blogid": bid,
+        })
         time.sleep(0.35)
 
-    POSTS_JSON.write_text(json.dumps(posts, ensure_ascii=False, indent=2),
-                          encoding="utf-8")
+    POSTS_JSON.write_text(
+        json.dumps(posts, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
     print(f"\n✅ 写出 {POSTS_JSON}（{len(posts)} 篇）")
     return True
-
 
 def cmd_publish(args):
     if not POSTS_JSON.exists():
         print(f"❌ 找不到 {POSTS_JSON}"); return False
     posts = json.loads(POSTS_JSON.read_text(encoding="utf-8"))
-    if args.limit > 0: posts = posts[:args.limit]
+
+    # ---- 按 --ids 过滤（1-based 序号）----
+    if getattr(args, "ids", ""):
+        want = []
+        for s in args.ids.split(","):
+            s = s.strip()
+            if s.isdigit():
+                want.append(int(s))
+        picked = []
+        for i in want:
+            if 1 <= i <= len(posts):
+                picked.append(posts[i-1])
+            else:
+                print(f"⚠️ 序号 {i} 超出范围（共 {len(posts)} 篇），跳过")
+        posts = picked
+        print(f"🎯 按序号选取：{want} → 命中 {len(posts)} 篇")
+
+    # ---- 按 --blogids 过滤 ----
+    if getattr(args, "blogids", ""):
+        want = set(s.strip() for s in args.blogids.split(",") if s.strip())
+        posts = [p for p in posts if str(p.get("blogid")) in want]
+        print(f"🎯 按 blogid 选取 → 命中 {len(posts)} 篇")
+
+    # ---- 按 --from / --to 过滤 ----
+    if getattr(args, "range_from", 0) or getattr(args, "range_to", 0):
+        f = args.range_from if args.range_from > 0 else 1
+        t = args.range_to if args.range_to > 0 else len(posts)
+        posts = posts[f-1:t]
+        print(f"🎯 按序号范围 [{f}, {t}] → {len(posts)} 篇")
+
+    if args.limit > 0:
+        posts = posts[:args.limit]
+    if not posts:
+        print("❌ 过滤后没有内容")
+        return False
     print(f"\n📤 待发 {len(posts)} 篇")
 
     wx = WeChatAPI(WECHAT_APP_ID, WECHAT_APP_SECRET)
@@ -426,6 +517,14 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="预览不发")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--skip-fetch", action="store_true", help="跳过抓取")
+    ap.add_argument("--ids", type=str, default="",
+                    help="按序号发（1-based），逗号分隔，例如 --ids 1,3,5,10")
+    ap.add_argument("--blogids", type=str, default="",
+                    help="按 blogid 发，逗号分隔")
+    ap.add_argument("--from", dest="range_from", type=int, default=0,
+                    help="起始序号（含）")
+    ap.add_argument("--to", dest="range_to", type=int, default=0,
+                    help="结束序号（含）")
     args = ap.parse_args()
 
     print("=" * 60)
