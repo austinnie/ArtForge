@@ -64,3 +64,9 @@ skills/music_generator/soundfonts/fluidsynth-v2.6.0-win10-x64-cpp11/bin/fluidsyn
 "cover*.jpg" 
 "cover*.png" 
 "公众号资源URL.txt" 
+cover*.jpg 
+cover*.png 
+data/ 
+list.txt 
+project_code_dump.txt 
+公众号资源URL.txt 
