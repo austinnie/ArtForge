@@ -193,12 +193,12 @@ class DailyPipeline:
     def _setup_config(self):
         defaults = {
             "output_root": "output/daily",
-            "qr": "assets/qr/公众号结束处.png",
+            "qr": "assets/qr/footer_art.png", 
             "theme": "newspaper",
             "count": 6,
             "engine": "agnes",
             "topics_file": "scripts/topics.txt",   # 跟 daily_task.py 放一起
-            "auto_publish": True,
+            "auto_publish": False,
             "auto_open": False,
         }
         for k, v in defaults.items():

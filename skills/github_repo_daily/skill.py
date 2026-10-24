@@ -59,7 +59,7 @@ class GitHubRepoDaily:
             "illustration_engine": "agnes",
             "illustration_width": 1024,
             "illustration_height": 1024,
-            "footer_image": "assets/qr/公众号结束处.png",
+            "footer_image": "assets/qr/footer_tech.png",
             "footer_alt": "关注公众号",
         }
         for k, v in defaults.items():
