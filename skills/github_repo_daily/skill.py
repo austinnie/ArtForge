@@ -403,7 +403,7 @@ JSON:"""
 
     def _ensure_h1(self, article: str, repo_info: Dict[str, Any], scenario: Dict[str, str]) -> str:
         """
-        确保文章第一行是 `# H1`，并做黑名单校验。
+        确保文章第一行是 `# H1`，并做黑名单校验、超长截断。
         """
         if not article:
             return article
@@ -418,11 +418,18 @@ JSON:"""
             logger.info(f"⚠️ 模型未输出 H1，已补标题: {title}")
             return f"# {title}\n\n{article.strip()}"
 
-        # 情况 2：H1 命中黑名单
         h1 = first[2:].strip()
+        
+        # 情况 2：H1 命中黑名单
         if h1 in TITLE_BLACKLIST:
             better = self._fallback_title(repo_info, scenario)
             logger.info(f"⚠️ H1 命中黑名单「{h1}」，已替换为: {better}")
+            return f"# {better}\n{rest}"
+
+        # 情况 3：【新增】H1 超长截断（微信限制大概 64 字符，中文限制在 20-25 字左右）
+        if len(h1) > 28:
+            better = h1[:25] + "..."
+            logger.info(f"⚠️ H1 长度超限 ({len(h1)} 字)，已自动截断为: {better}")
             return f"# {better}\n{rest}"
 
         return article
@@ -472,10 +479,10 @@ JSON:"""
    - ## 适合谁 / 不适合谁（明确边界，别当广告）
 4. 全文 1200—1800 字，中文，语气像在技术群里跟同事讲，不要用"赋能""闭环""抓手"这类词。
 5. **诚实优先**：你没有实际跑过这个项目，所以凡是"实测数字"都不能编。要么用"README 里写的是……"，要么用"按文档描述……"。文章结尾加一行小字：`> 本文基于 {full_name} 的 README 与公开信息整理，未做完整实测，关键步骤仅供参考。`
-6. 标题要具体，不要包含"推荐""盘点""必看"这类词，格式参考：
+6. 标题要极度精简，**绝对不能超过 20 个字**！不要包含"推荐""盘点""必看"这类词，格式参考：
    - `用 {full_name} 把 {pain} 从 X 小时压到 Y 分钟`
    - `{role} 不想再 {pain}，于是用了 {full_name}`
-   - 如果确实写不出数字，就用：`{role} 是怎么用 {full_name} 解决 {scene} 的`
+   - 如果变量太长，请自己总结缩写，比如只取 `{role}` 的核心职业词和 `{full_name}` 拼成 15 字内的短句。
 
 仓库信息（供你核对事实，不要把这段原样抄进文章）：
 - 仓库：{full_name}
@@ -517,7 +524,7 @@ README 节选（事实来源，只引用能支撑文章的部分）：
 
         prompt = f"""你是一个技术博主，请根据以下 GitHub 仓库信息，写一篇介绍文章。
 要求：
-1. 标题吸引人，**第一行必须输出 `# 标题`**（Markdown H1），不要用"推荐/盘点/必看/简介/前言"作为标题。
+1. 标题吸引人，**绝对不能超过 20 个字**，**第一行必须输出 `# 标题`**（Markdown H1），不要用"推荐/盘点/必看/简介/前言"作为标题。
 2. 介绍仓库的主要功能、用途、亮点。
 3. 语言通俗易懂，适合公众号读者。
 4. 可以包含使用场景、技术栈等。
@@ -942,6 +949,76 @@ JSON array:"""
                 logger.warning(f"⚠️ 归档失败: {e}")
                 archive_md = md_file
 
+            # ==================== ✅ 新增：同步到 Hexo 博客 ====================
+            try:
+                # 1. 博客仓库的绝对路径（请改成你电脑上真实的路径）
+                blog_repo = Path("E:/SD_OpenVINO/austinnie.github.io")
+                posts_dir = blog_repo / "source" / "_posts"
+                images_dir = blog_repo / "source" / "images"
+
+                # 确保文件夹存在
+                if not images_dir.exists():
+                    images_dir.mkdir(parents=True, exist_ok=True)
+                    
+                if blog_repo.exists() and posts_dir.exists():
+                    # 2. 清理文件名（防止特殊字符报错）
+                    safe_filename = re.sub(r'[^a-zA-Z0-9_-]', '', repo_name) + ".md"
+                    hexo_post_path = posts_dir / safe_filename
+                    
+                    # 3. 读取生成的 Markdown
+                    md_content = archive_md.read_text(encoding="utf-8")
+
+                    # 4. 搬运图片并替换路径
+                    if illustration_paths:
+                        for img_path in illustration_paths:
+                            # 复制图片到博客的 source/images/ 目录
+                            target_img_path = images_dir / img_path.name
+                            shutil.copy2(img_path, target_img_path)
+                            
+                            # 替换 Markdown 里的路径：assets/xxx.png -> /images/xxx.png
+                            old_ref = f"assets/{img_path.name}"
+                            new_ref = f"/images/{img_path.name}"
+                            md_content = md_content.replace(old_ref, new_ref)
+                        logger.info(f"🖼️ 已同步 {len(illustration_paths)} 张图片到博客目录")
+                        
+                    # 5. 剥离已有的 H1（因为我们要把它放进 front-matter 的 title 里）
+                    # 将 "# 标题" 替换为正常文本
+                    lines = md_content.split("\n")
+                    title_line = lines[0].replace("# ", "").strip()
+                    body_content = "\n".join(lines[1:]).strip()
+                    
+                    # ✅ 6. 核心修改点：在博客正文末尾注入 GitHub 仓库里的 footer 图片
+                    # 注意：这里写的是绝对路径 /images/footer.png，对应博客根目录
+                    body_content += "\n\n---\n\n![关注公众号](/images/footer.png)\n"
+                    
+                    # 7. 组装 Hexo 需要的 YAML Header
+                    date_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    hexo_content = f"""---
+title: "{title_line}"
+date: {date_str}
+tags: [GitHub, 技术分享]
+---
+
+{body_content}
+"""
+                    
+                    # 8. 写入博客仓库
+                    hexo_post_path.write_text(hexo_content, encoding="utf-8")
+                    logger.info(f"✅ 已同步到 Hexo 博客（含 Footer 图）: {hexo_post_path}")
+                    
+                    # 9. 执行 Git 命令推送到 GitHub
+                    import subprocess
+                    subprocess.run(["git", "add", "."], cwd=blog_repo, check=True)
+                    subprocess.run(["git", "commit", "-m", f"auto: 发布文章 {repo_name}"], cwd=blog_repo, check=True)
+                    subprocess.run(["git", "push", "origin", "master"], cwd=blog_repo, check=True)
+                    logger.info("🚀 博客已自动推送到 GitHub，Actions 正在部署...")
+                else:
+                    logger.warning(f"⚠️ 找不到博客仓库路径或 _posts 目录，跳过同步: {blog_repo}")
+            except Exception as e:
+                logger.error(f"❌ 同步到 Hexo 博客失败: {e}")
+            # ===================================================================
+
+            
             history = self._load_history()
             if full_name not in history:
                 history.append(full_name)

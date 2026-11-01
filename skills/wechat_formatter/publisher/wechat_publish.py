@@ -556,6 +556,10 @@ def main():
     # 剥掉任意层级的 Markdown 标题前缀 + 头尾空白
     title = re.sub(r"^#+\s*", "", title).strip()
     
+    # 【新增】强制限制微信标题长度（微信限制64字符，保险起见截断到 60）
+    if len(title) > 60:
+        title = title[:57] + "..."
+    
     author = args.author
     print(f"标题: {title}")
     print(f"作者: {author}")
@@ -644,6 +648,14 @@ def main():
     else:
         # 普通文章
         media_id = push_draft(token, title, html, thumb_media_id, author)
+
+    # 【新增】统一检查推送结果，如果失败则抛出退出码 1
+    if media_id is None:
+        print("✗ 推送失败，终止任务")
+        sys.exit(1)
+    else:
+        print(f"✓ 推送成功: {media_id}")
+        sys.exit(0)
 
 
 if __name__ == "__main__":
