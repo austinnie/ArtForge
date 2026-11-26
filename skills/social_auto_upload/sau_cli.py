@@ -1046,6 +1046,45 @@ def build_parser() -> argparse.ArgumentParser:
     baijiahao_upload_video_parser.add_argument("--collection", default=None, help="Optional collection name")
     add_runtime_flags(baijiahao_upload_video_parser)
 
+    # ── Instagram ──
+    ig_parser = platform_parsers.add_parser("instagram", help="Instagram operations")
+    ig_actions = ig_parser.add_subparsers(dest="action", required=True)
+
+    for action_name in ("login", "check"):
+        action_parser = ig_actions.add_parser(action_name, help=f"Instagram {action_name}")
+        action_parser.add_argument("--account", required=True, help="Instagram user-defined account_name")
+        if action_name == "login":
+            add_runtime_flags(action_parser)
+
+    ig_upload_note_parser = ig_actions.add_parser("upload-note", help="Upload one note to Instagram")
+    ig_upload_note_parser.add_argument("--account", required=True)
+    ig_upload_note_parser.add_argument("--images", required=True, nargs="+", type=existing_file_path, help="Image file paths")
+    ig_upload_note_parser.add_argument("--title", required=True, help="Note title")
+    ig_upload_note_parser.add_argument("--note", default="", help="Optional note content")
+    ig_upload_note_parser.add_argument("--tags", default="", help="Comma-separated tags")
+    ig_upload_note_parser.add_argument("--schedule", type=schedule_value)
+    add_runtime_flags(ig_upload_note_parser)
+
+    # ── Facebook ──
+    fb_parser = platform_parsers.add_parser("facebook", help="Facebook operations")
+    fb_actions = fb_parser.add_subparsers(dest="action", required=True)
+
+    for action_name in ("login", "check"):
+        action_parser = fb_actions.add_parser(action_name, help=f"Facebook {action_name}")
+        action_parser.add_argument("--account", required=True, help="Facebook user-defined account_name")
+        if action_name == "login":
+            add_runtime_flags(action_parser)
+
+    fb_upload_note_parser = fb_actions.add_parser("upload-note", help="Upload one post to Facebook")
+    fb_upload_note_parser.add_argument("--account", required=True)
+    fb_upload_note_parser.add_argument("--images", required=True, nargs="+", type=existing_file_path, help="Image file paths")
+    fb_upload_note_parser.add_argument("--title", required=True)
+    fb_upload_note_parser.add_argument("--note", default="", help="Optional note content")
+    fb_upload_note_parser.add_argument("--tags", default="")
+    fb_upload_note_parser.add_argument("--schedule", type=schedule_value)
+    add_runtime_flags(fb_upload_note_parser)
+
+    
     return parser
 
 
@@ -1462,6 +1501,68 @@ async def dispatch(args: argparse.Namespace) -> int:
 
         raise RuntimeError(f"Unsupported Baijiahao action: {args.action}")
 
+    # ── Instagram ──
+    if args.platform == "instagram":
+        if args.action == "login":
+            result = await instagram_setup(resolve_account_file("instagram", args.account), handle=True, return_detail=True, headless=args.headless)
+            if not result.get("success", True): # 有些 setup 返回结构可能不一样
+                raise RuntimeError(result.get("message", "IG login failed"))
+            print(f"Instagram login flow completed: {result.get('account_file', '')}")
+            return 0
+
+        if args.action == "check":
+            account_file = resolve_account_file("instagram", args.account)
+            if not account_file.exists():
+                print("invalid")
+                return 1
+            # 这里假设 IG 有 check 方法，如果没有，可能直接跳过
+            from uploader.instagram_uploader.main import cookie_auth as ig_cookie_auth
+            is_valid = await ig_cookie_auth(str(account_file))
+            print("valid" if is_valid else "invalid")
+            return 0 if is_valid else 1
+
+        if args.action == "upload-note":
+            account_file = resolve_account_file("instagram", args.account)
+            app = InstaPost(
+                image_paths=[str(p) for p in args.images],
+                title=args.title,
+                note=args.note,
+                tags=parse_tags(args.tags),
+                account_file=str(account_file),
+                headless=args.headless,
+            )
+            await app.main() # 或者 await app.upload_note()
+            print(f"Instagram note upload submitted: {len(args.images)} images")
+            return 0
+
+    # ── Facebook ──
+    if args.platform == "facebook":
+        if args.action == "login":
+            from uploader.facebook_uploader.main import facebook_setup
+            result = await facebook_setup(resolve_account_file("facebook", args.account), handle=True, return_detail=True, headless=args.headless)
+            print(f"Facebook login flow completed.")
+            return 0
+
+        if args.action == "check":
+            account_file = resolve_account_file("facebook", args.account)
+            is_valid = await fb_cookie_auth(str(account_file))
+            print("valid" if is_valid else "invalid")
+            return 0 if is_valid else 1
+
+        if args.action == "upload-note":
+            account_file = resolve_account_file("facebook", args.account)
+            app = FBPost(
+                image_paths=[str(p) for p in args.images],
+                title=args.title,
+                note=args.note,
+                tags=parse_tags(args.tags),
+                account_file=str(account_file),
+                headless=args.headless,
+            )
+            await app.main()
+            print(f"Facebook post upload submitted: {len(args.images)} images")
+            return 0
+            
     raise RuntimeError(f"Unsupported platform: {args.platform}")
 
 
