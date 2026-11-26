@@ -929,7 +929,6 @@ JSON array:"""
             illustration_str_paths = [str(p) for p in illustration_paths]
 
             # 7) 发布
-            # 7) 发布
             published = self.publish_to_wechat(
                 article_md=article,
                 repo_info=details,
@@ -949,17 +948,15 @@ JSON array:"""
                 logger.warning(f"⚠️ 归档失败: {e}")
                 archive_md = md_file
 
-            # ==================== ✅ 新增：同步到 Hexo 博客 ====================
+            # ==================== ✅ 同步到 Hexo 博客 ====================
             try:
-                # 1. 博客仓库的绝对路径（请改成你电脑上真实的路径）
+                # 1. 博客仓库的绝对路径
                 blog_repo = Path("E:/SD_OpenVINO/austinnie.github.io")
                 posts_dir = blog_repo / "source" / "_posts"
-                images_dir = blog_repo / "source" / "images"
+                
+                # ✅ 修复 1：只定义 post_image_dir，不再使用 images_dir
+                post_image_dir = blog_repo / "source" / "images" / repo_name
 
-                # 确保文件夹存在
-                if not images_dir.exists():
-                    images_dir.mkdir(parents=True, exist_ok=True)
-                    
                 if blog_repo.exists() and posts_dir.exists():
                     # 2. 清理文件名（防止特殊字符报错）
                     safe_filename = re.sub(r'[^a-zA-Z0-9_-]', '', repo_name) + ".md"
@@ -970,25 +967,28 @@ JSON array:"""
 
                     # 4. 搬运图片并替换路径
                     if illustration_paths:
+                        # ✅ 修复 2：如果有图片，才创建对应的子文件夹
+                        post_image_dir.mkdir(parents=True, exist_ok=True)
+                        
                         for img_path in illustration_paths:
-                            # 复制图片到博客的 source/images/ 目录
-                            target_img_path = images_dir / img_path.name
+                            # 复制图片到博客的 source/images/{repo_name}/ 目录
+                            target_img_path = post_image_dir / img_path.name
                             shutil.copy2(img_path, target_img_path)
                             
-                            # 替换 Markdown 里的路径：assets/xxx.png -> /images/xxx.png
+                            # ✅ 修复 3：替换 Markdown 里的路径，必须带上子目录名！
+                            # assets/xxx.png -> /images/{repo_name}/xxx.png
                             old_ref = f"assets/{img_path.name}"
-                            new_ref = f"/images/{img_path.name}"
+                            new_ref = f"/images/{repo_name}/{img_path.name}"
                             md_content = md_content.replace(old_ref, new_ref)
-                        logger.info(f"🖼️ 已同步 {len(illustration_paths)} 张图片到博客目录")
+                            
+                        logger.info(f"🖼️ 已同步 {len(illustration_paths)} 张图片到博客目录: /images/{repo_name}/")
                         
-                    # 5. 剥离已有的 H1（因为我们要把它放进 front-matter 的 title 里）
-                    # 将 "# 标题" 替换为正常文本
+                    # 5. 剥离已有的 H1
                     lines = md_content.split("\n")
                     title_line = lines[0].replace("# ", "").strip()
                     body_content = "\n".join(lines[1:]).strip()
                     
-                    # ✅ 6. 核心修改点：在博客正文末尾注入 GitHub 仓库里的 footer 图片
-                    # 注意：这里写的是绝对路径 /images/footer.png，对应博客根目录
+                    # 6. 注入 footer 图片
                     body_content += "\n\n---\n\n![关注公众号](/images/footer.png)\n"
                     
                     # 7. 组装 Hexo 需要的 YAML Header
@@ -1018,7 +1018,6 @@ tags: [GitHub, 技术分享]
                 logger.error(f"❌ 同步到 Hexo 博客失败: {e}")
             # ===================================================================
 
-            
             history = self._load_history()
             if full_name not in history:
                 history.append(full_name)
@@ -1026,13 +1025,13 @@ tags: [GitHub, 技术分享]
 
             elapsed = time.time() - start_time
             
-            # ✅ 修复：根据是否要求发布来判定状态
+            # 根据是否要求发布来判定状态
             if published:
                 status = "success"
             elif not self.config.get("wechat_publish", True):
-                status = "success"  # 本来就不要求发布，排版成功就算成功
+                status = "success" 
             else:
-                status = "partial_success"  # 要求发布但失败了
+                status = "partial_success" 
 
             return {
                 "status": status,
