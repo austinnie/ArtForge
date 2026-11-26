@@ -75,7 +75,7 @@ class GitHubRepoDaily:
             "log_level": "INFO",
 
             # 插图与文末二维码
-            "illustration_count": 3,
+            "illustration_count": 0,
             "illustration_engine": "agnes",
             "illustration_width": 1024,
             "illustration_height": 1024,
